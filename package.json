@@ -1,0 +1,22 @@
+{
+  "name": "orangebank",
+  "version": "1.0.0",
+  "description": "Boas vindas ao desafio do Orange Hackathon!   Neste final de semana, seu objetivo será desenvolver uma **API de um mini banco de investimentos**, simulando operações comuns do mercado financeiro.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "run": "nodemon server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pesiqueiraa/orangebank.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pesiqueiraa/orangebank/issues"
+  },
+  "homepage": "https://github.com/pesiqueiraa/orangebank#readme"
+}

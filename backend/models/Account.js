@@ -466,14 +466,14 @@ class Account {
         brokerageFee
       );
 
-      // Registrar o ativo na carteira
+      // Registrar o ativo na carteira (temporariamente sem transaction_ref)
       const portfolioQuery = `
-                INSERT INTO portfolio (user_id, account_id, asset_symbol, quantity, purchase_price, purchase_date, transaction_ref)
-                VALUES ($1, $2, $3, $4, $5, NOW(), $6)
+                INSERT INTO portfolio (user_id, account_id, asset_symbol, quantity, purchase_price, average_price, purchase_date)
+                VALUES ($1, $2, $3, $4, $5, $5, NOW())
                 ON CONFLICT (user_id, asset_symbol) 
                 DO UPDATE SET 
                     quantity = portfolio.quantity + $4,
-                    average_price = ((portfolio.quantity * portfolio.average_price) + ($4 * $5)) / (portfolio.quantity + $4),
+                    average_price = ((portfolio.quantity * COALESCE(portfolio.average_price, portfolio.purchase_price)) + ($4 * $5)) / (portfolio.quantity + $4),
                     updated_at = NOW()
             `;
 
@@ -483,7 +483,6 @@ class Account {
         assetSymbol,
         quantity,
         price,
-        transactionId,
       ]);
 
       await client.query("COMMIT");

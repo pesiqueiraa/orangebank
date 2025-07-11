@@ -3,6 +3,9 @@ const app = express();
 const port = process.env.PORT || 3000;
 const routes = require('./routes'); 
 
+// Middleware para processar JSON
+app.use(express.json());
+
 app.get('/', (req, res) => {
   res.send('Hello World!');
 });
@@ -10,7 +13,6 @@ app.get('/', (req, res) => {
 // Usar as rotas com prefixo opcional (ex: /api/users)
 app.use('/api', routes);
 
-
 app.listen(port, () => {
     console.log(`Servidor rodando na porta http://localhost:${port}`);
-}); 
+});

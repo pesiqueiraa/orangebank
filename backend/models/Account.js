@@ -102,4 +102,71 @@ class Account {
       throw new Error(`Erro ao buscar conta por ID: ${error.message}`);
     }
   }
+      /**
+     * Criar novas contas para um usuário (corrente e investimento)
+     * @param {string} userId - ID do usuário
+     * @returns {Object} Objeto com ambas as contas criadas
+     */
+    static async createAccountsForUser(userId) {
+        const client = await db.getClient();
+        try {
+            await client.query('BEGIN');
+
+            // Verificar se o usuário já possui contas
+            const existingAccountsQuery = `
+                SELECT type FROM accounts WHERE user_id = $1
+            `;
+            const existingResult = await client.query(existingAccountsQuery, [userId]);
+            
+            if (existingResult.rows.length > 0) {
+                const existingTypes = existingResult.rows.map(row => row.type);
+                throw new Error(`Usuário já possui contas: ${existingTypes.join(', ')}`);
+            }
+
+            // Criar conta corrente
+            const currentAccountQuery = `
+                INSERT INTO accounts (user_id, type, balance) 
+                VALUES ($1, 'corrente', 0) 
+                RETURNING id, user_id, type, balance, created_at, updated_at
+            `;
+            const currentResult = await client.query(currentAccountQuery, [userId]);
+
+            // Criar conta investimento
+            const investmentAccountQuery = `
+                INSERT INTO accounts (user_id, type, balance) 
+                VALUES ($1, 'investimento', 0) 
+                RETURNING id, user_id, type, balance, created_at, updated_at
+            `;
+            const investmentResult = await client.query(investmentAccountQuery, [userId]);
+
+            await client.query('COMMIT');
+
+            const currentRow = currentResult.rows[0];
+            const investmentRow = investmentResult.rows[0];
+
+            return {
+                corrente: new Account(
+                    currentRow.id,
+                    currentRow.user_id,
+                    currentRow.type,
+                    parseFloat(currentRow.balance),
+                    currentRow.created_at,
+                    currentRow.updated_at
+                ),
+                investimento: new Account(
+                    investmentRow.id,
+                    investmentRow.user_id,
+                    investmentRow.type,
+                    parseFloat(investmentRow.balance),
+                    investmentRow.created_at,
+                    investmentRow.updated_at
+                )
+            };
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw new Error(`Erro ao criar contas: ${error.message}`);
+        } finally {
+            client.release();
+        }
+    }
 }

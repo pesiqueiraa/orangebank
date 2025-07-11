@@ -102,71 +102,124 @@ class Account {
       throw new Error(`Erro ao buscar conta por ID: ${error.message}`);
     }
   }
-      /**
-     * Criar novas contas para um usuário (corrente e investimento)
-     * @param {string} userId - ID do usuário
-     * @returns {Object} Objeto com ambas as contas criadas
-     */
-    static async createAccountsForUser(userId) {
-        const client = await db.getClient();
-        try {
-            await client.query('BEGIN');
+  /**
+   * Criar novas contas para um usuário (corrente e investimento)
+   * @param {string} userId - ID do usuário
+   * @returns {Object} Objeto com ambas as contas criadas
+   */
+  static async createAccountsForUser(userId) {
+    const client = await db.getClient();
+    try {
+      await client.query("BEGIN");
 
-            // Verificar se o usuário já possui contas
-            const existingAccountsQuery = `
+      // Verificar se o usuário já possui contas
+      const existingAccountsQuery = `
                 SELECT type FROM accounts WHERE user_id = $1
             `;
-            const existingResult = await client.query(existingAccountsQuery, [userId]);
-            
-            if (existingResult.rows.length > 0) {
-                const existingTypes = existingResult.rows.map(row => row.type);
-                throw new Error(`Usuário já possui contas: ${existingTypes.join(', ')}`);
-            }
+      const existingResult = await client.query(existingAccountsQuery, [
+        userId,
+      ]);
 
-            // Criar conta corrente
-            const currentAccountQuery = `
+      if (existingResult.rows.length > 0) {
+        const existingTypes = existingResult.rows.map((row) => row.type);
+        throw new Error(
+          `Usuário já possui contas: ${existingTypes.join(", ")}`
+        );
+      }
+
+      // Criar conta corrente
+      const currentAccountQuery = `
                 INSERT INTO accounts (user_id, type, balance) 
                 VALUES ($1, 'corrente', 0) 
                 RETURNING id, user_id, type, balance, created_at, updated_at
             `;
-            const currentResult = await client.query(currentAccountQuery, [userId]);
+      const currentResult = await client.query(currentAccountQuery, [userId]);
 
-            // Criar conta investimento
-            const investmentAccountQuery = `
+      // Criar conta investimento
+      const investmentAccountQuery = `
                 INSERT INTO accounts (user_id, type, balance) 
                 VALUES ($1, 'investimento', 0) 
                 RETURNING id, user_id, type, balance, created_at, updated_at
             `;
-            const investmentResult = await client.query(investmentAccountQuery, [userId]);
+      const investmentResult = await client.query(investmentAccountQuery, [
+        userId,
+      ]);
 
-            await client.query('COMMIT');
+      await client.query("COMMIT");
 
-            const currentRow = currentResult.rows[0];
-            const investmentRow = investmentResult.rows[0];
+      const currentRow = currentResult.rows[0];
+      const investmentRow = investmentResult.rows[0];
 
-            return {
-                corrente: new Account(
-                    currentRow.id,
-                    currentRow.user_id,
-                    currentRow.type,
-                    parseFloat(currentRow.balance),
-                    currentRow.created_at,
-                    currentRow.updated_at
-                ),
-                investimento: new Account(
-                    investmentRow.id,
-                    investmentRow.user_id,
-                    investmentRow.type,
-                    parseFloat(investmentRow.balance),
-                    investmentRow.created_at,
-                    investmentRow.updated_at
-                )
-            };
-        } catch (error) {
-            await client.query('ROLLBACK');
-            throw new Error(`Erro ao criar contas: ${error.message}`);
-        } finally {
-            client.release();
-        }
+      return {
+        corrente: new Account(
+          currentRow.id,
+          currentRow.user_id,
+          currentRow.type,
+          parseFloat(currentRow.balance),
+          currentRow.created_at,
+          currentRow.updated_at
+        ),
+        investimento: new Account(
+          investmentRow.id,
+          investmentRow.user_id,
+          investmentRow.type,
+          parseFloat(investmentRow.balance),
+          investmentRow.created_at,
+          investmentRow.updated_at
+        ),
+      };
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw new Error(`Erro ao criar contas: ${error.message}`);
+    } finally {
+      client.release();
     }
+  }
+  // ==================== MÉTODOS DE OPERAÇÕES FINANCEIRAS ====================
+
+  /**
+   * Realizar depósito (apenas conta corrente)
+   * @param {number} amount - Valor do depósito
+   * @returns {Object} Resultado da operação
+   */
+  async deposit(amount) {
+    if (this.type !== "corrente") {
+      throw new Error("Depósitos só podem ser realizados na conta corrente");
+    }
+
+    if (amount <= 0) {
+      throw new Error("Valor do depósito deve ser maior que zero");
+    }
+
+    const client = await db.getClient();
+    try {
+      await client.query("BEGIN");
+
+      // Atualizar saldo da conta
+      const updateQuery = `
+                UPDATE accounts 
+                SET balance = balance + $1, updated_at = NOW() 
+                WHERE id = $2 
+                RETURNING balance
+            `;
+      const result = await client.query(updateQuery, [amount, this.id]);
+      this.balance = parseFloat(result.rows[0].balance);
+
+      // Registrar transação
+      await this.recordTransaction(client, "depósito", amount, 0);
+
+      await client.query("COMMIT");
+
+      return {
+        success: true,
+        message: "Depósito realizado com sucesso",
+        newBalance: this.balance,
+      };
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw new Error(`Erro ao realizar depósito: ${error.message}`);
+    } finally {
+      client.release();
+    }
+  }
 }

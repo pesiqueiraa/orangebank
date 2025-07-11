@@ -249,4 +249,26 @@ class Account {
 
     return { valid: true };
   }
+  /**
+   * Verificar operações pendentes (para conta investimento)
+   * @returns {boolean} True se há operações pendentes
+   */
+  async checkPendingOperations() {
+    try {
+      const query = `
+                SELECT COUNT(*) as pending_count
+                FROM transactions t
+                JOIN operations o ON t.id = o.transaction_ref
+                WHERE t.account_id = $1 
+                AND t.created_at > NOW() - INTERVAL '1 hour'
+                AND o.tipo = 'compra'
+            `;
+      const result = await db.query(query, [this.id]);
+      return parseInt(result.rows[0].pending_count) > 0;
+    } catch (error) {
+      throw new Error(
+        `Erro ao verificar operações pendentes: ${error.message}`
+      );
+    }
+  }
 }

@@ -271,6 +271,37 @@ class AssetController {
       });
     }
   }
+  /**
+   * Buscar produtos de renda fixa por categoria
+   * GET /api/assets/fixed-income/category/:categoria
+   */
+  static async getFixedIncomesByCategory(req, res) {
+    try {
+      const { categoria } = req.params;
+
+      if (!categoria) {
+        return res.status(400).json({
+          success: false,
+          message: "Categoria é obrigatória",
+        });
+      }
+
+      const products = await Asset.getFixedIncomesByCategory(categoria);
+
+      return res.status(200).json({
+        success: true,
+        message: `Produtos de renda fixa da categoria ${categoria} listados com sucesso`,
+        data: products,
+        total: products.length,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Erro ao buscar produtos por categoria",
+        error: error.message,
+      });
+    }
+  }
 }
 
 module.exports = AssetController;

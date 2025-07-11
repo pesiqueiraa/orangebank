@@ -47,6 +47,30 @@ class Asset {
       throw new Error(`Erro ao buscar ativos de renda fixa: ${error.message}`);
     }
   }
+
+  /**
+   * Buscar ativo específico por ID
+   * @param {string} id - ID do ativo
+   * @returns {Asset|null} Ativo encontrado ou null
+   */
+  static async findById(id) {
+    try {
+      const query = `
+                SELECT id, nome, tipo, categoria, created_at 
+                FROM assets 
+                WHERE id = $1
+            `;
+      const result = await db.query(query, [id]);
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      return Asset.fromDatabase(result.rows[0]);
+    } catch (error) {
+      throw new Error(`Erro ao buscar ativo por ID: ${error.message}`);
+    }
+  }
 }
 
 module.exports = Asset;

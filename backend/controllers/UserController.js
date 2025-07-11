@@ -1,7 +1,7 @@
 const User = require("../models/User");
 
 class UserController {
-  // Método para criar um novo usuário
+  //POST /users - Método para criar um novo usuário
   static async createUser(req, res) {
     const { name, email, cpf, birthDate, password } = req.body;
 
@@ -13,7 +13,7 @@ class UserController {
     }
   }
 
-  // Método para autenticação com email e senha
+  //POST /users - Método para autenticação com email e senha
   static async loginWithEmail(req, res) {
     const { email, password } = req.body;
 
@@ -49,7 +49,7 @@ class UserController {
     }
   }
 
-  // Método para autenticação com CPF e senha
+  //POST /users - Método para autenticação com CPF e senha
   static async loginWithCpf(req, res) {
     const { cpf, password } = req.body;
 
@@ -79,6 +79,31 @@ class UserController {
         message: "Login realizado com sucesso",
         user: userResponse,
       });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  //GET /users - Método para encontrar um usuário pelo email ou CPF
+  static async getUserByEmailOrCpf(req, res) {
+    const { email, cpf } = req.query;
+
+    try {
+      // Validar pelo menos um campo
+      if (!email && !cpf) {
+        return res.status(400).json({
+          error: "Pelo menos um dos campos (email ou CPF) é obrigatório",
+        });
+      }
+
+      // Buscar usuário por email ou CPF
+      const user = await User.findByEmailOrCpf(email, cpf);
+      if (!user) {
+        return res.status(404).json({
+          error: "Usuário não encontrado",
+        });
+      }
+      res.status(200).json(userResponse);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }

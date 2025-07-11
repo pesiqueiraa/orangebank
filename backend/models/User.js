@@ -14,7 +14,7 @@ class User {
     this.updatedAt = updatedAt;
   }
 
-  // Método estático para criar um novo usuário 
+  // Método para criar um novo usuário
   static async create({ name, email, cpf, birthDate, password }) {
     const result = await db.query(
       `
@@ -39,6 +39,28 @@ class User {
     );
   }
 
+  // Método para encontrar um usuário pelo email ou CPF
+  static async findByEmailOrCpf(login) {
+    const result = await db.query(
+      `SELECT * FROM users WHERE email = $1 OR cpf = $1`,
+      [login]
+    );
+
+    if (result.rows.length === 0) return null;
+
+    const user = result.rows[0];
+
+    return new User(
+      user.id,
+      user.name,
+      user.email,
+      user.cpf,
+      user.birth_date,
+      user.password,
+      user.created_at,
+      user.updated_at
+    );
+  }
 }
 
 // Exporta a classe User para uso nos controllers e rotas

@@ -18,5 +18,8 @@
   "bugs": {
     "url": "https://github.com/pesiqueiraa/orangebank/issues"
   },
-  "homepage": "https://github.com/pesiqueiraa/orangebank#readme"
+  "homepage": "https://github.com/pesiqueiraa/orangebank#readme",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
 }

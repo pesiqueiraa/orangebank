@@ -171,6 +171,29 @@ class Asset {
       throw new Error(`Erro ao obter estatísticas: ${error.message}`);
     }
   }
+  /**
+   * Obter distribuição por categoria
+   * @returns {Array} Distribuição por categoria
+   */
+  static async getCategoryDistribution() {
+    try {
+      const query = `
+                SELECT 
+                    categoria,
+                    tipo,
+                    COUNT(*) as total
+                FROM assets 
+                GROUP BY categoria, tipo 
+                ORDER BY categoria, tipo
+            `;
+      const result = await db.query(query);
+      return result.rows;
+    } catch (error) {
+      throw new Error(
+        `Erro ao obter distribuição por categoria: ${error.message}`
+      );
+    }
+  }
 }
 
 module.exports = Asset;

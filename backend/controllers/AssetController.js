@@ -1,7 +1,6 @@
-const Asset = require('../models/Asset');
+const Asset = require("../models/Asset");
 
 class AssetController {
-  
   // ==================== LISTAGEM E BUSCA DE ATIVOS ====================
 
   /**
@@ -11,18 +10,18 @@ class AssetController {
   static async getAllAssets(req, res) {
     try {
       const assets = await Asset.getAllAssets();
-      
+
       return res.status(200).json({
         success: true,
-        message: 'Ativos listados com sucesso',
+        message: "Ativos listados com sucesso",
         data: assets,
-        total: assets.length
+        total: assets.length,
       });
     } catch (error) {
       return res.status(500).json({
         success: false,
-        message: 'Erro ao listar ativos',
-        error: error.message
+        message: "Erro ao listar ativos",
+        error: error.message,
       });
     }
   }
@@ -34,29 +33,29 @@ class AssetController {
   static async searchAssets(req, res) {
     try {
       const { q } = req.query;
-      
-      if (!q || q.trim() === '') {
+
+      if (!q || q.trim() === "") {
         return res.status(400).json({
           success: false,
-          message: 'Termo de busca é obrigatório',
-          example: '/api/assets/search?q=BOIB3'
+          message: "Termo de busca é obrigatório",
+          example: "/api/assets/search?q=BOIB3",
         });
       }
 
       const assets = await Asset.searchAssets(q.trim());
-      
+
       return res.status(200).json({
         success: true,
         message: `Busca realizada para: "${q}"`,
         data: assets,
         total: assets.length,
-        searchTerm: q.trim()
+        searchTerm: q.trim(),
       });
     } catch (error) {
       return res.status(500).json({
         success: false,
-        message: 'Erro ao buscar ativos',
-        error: error.message
+        message: "Erro ao buscar ativos",
+        error: error.message,
       });
     }
   }
@@ -68,21 +67,85 @@ class AssetController {
   static async searchAssetsAdvanced(req, res) {
     try {
       const filters = req.body;
-      
+
       const assets = await Asset.searchAssetsWithFilters(filters);
-      
+
       return res.status(200).json({
         success: true,
-        message: 'Busca avançada realizada com sucesso',
+        message: "Busca avançada realizada com sucesso",
         data: assets,
         total: assets.length,
-        filters: filters
+        filters: filters,
       });
     } catch (error) {
       return res.status(500).json({
         success: false,
-        message: 'Erro na busca avançada',
-        error: error.message
+        message: "Erro na busca avançada",
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * Buscar ativos por categoria
+   * GET /api/assets/category/:categoria
+   */
+  static async getAssetsByCategory(req, res) {
+    try {
+      const { categoria } = req.params;
+
+      if (!categoria) {
+        return res.status(400).json({
+          success: false,
+          message: "Categoria é obrigatória",
+        });
+      }
+
+      const assets = await Asset.findByCategory(categoria);
+
+      return res.status(200).json({
+        success: true,
+        message: `Ativos da categoria ${categoria} listados com sucesso`,
+        data: assets,
+        total: assets.length,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Erro ao buscar ativos por categoria",
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * Buscar ativos por tipo
+   * GET /api/assets/type/:tipo
+   */
+  static async getAssetsByType(req, res) {
+    try {
+      const { tipo } = req.params;
+
+      if (!tipo) {
+        return res.status(400).json({
+          success: false,
+          message: "Tipo é obrigatório",
+        });
+      }
+
+      const assets = await Asset.findByType(tipo);
+
+      return res.status(200).json({
+        success: true,
+        message: `Ativos do tipo ${tipo} listados com sucesso`,
+        data: assets,
+        total: assets.length,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Erro ao buscar ativos por tipo",
+        error: error.message,
       });
     }
   }

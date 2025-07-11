@@ -149,6 +149,30 @@ class AssetController {
       });
     }
   }
+  // ==================== AÇÕES (RENDA VARIÁVEL) ====================
+
+  /**
+   * Listar todas as ações com preços
+   * GET /api/assets/stocks
+   */
+  static async getAllStocks(req, res) {
+    try {
+      const stocks = await Asset.getStocksWithPrices();
+
+      return res.status(200).json({
+        success: true,
+        message: "Ações listadas com sucesso",
+        data: stocks,
+        total: stocks.length,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Erro ao listar ações",
+        error: error.message,
+      });
+    }
+  }
 }
 
 module.exports = AssetController;

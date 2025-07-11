@@ -38,4 +38,36 @@ class Account {
       throw new Error(`Erro ao buscar contas do usuário: ${error.message}`);
     }
   }
+  /**
+   * Busca conta específica por usuário e tipo
+   * @param {string} userId - ID do usuário
+   * @param {string} type - Tipo da conta ('corrente' ou 'investimento')
+   * @returns {Account|null} Conta encontrada ou null
+   */
+  static async findByUserIdAndType(userId, type) {
+    try {
+      const query = `
+                SELECT id, user_id, type, balance, created_at, updated_at 
+                FROM accounts 
+                WHERE user_id = $1 AND type = $2
+            `;
+      const result = await db.query(query, [userId, type]);
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      const row = result.rows[0];
+      return new Account(
+        row.id,
+        row.user_id,
+        row.type,
+        parseFloat(row.balance),
+        row.created_at,
+        row.updated_at
+      );
+    } catch (error) {
+      throw new Error(`Erro ao buscar conta: ${error.message}`);
+    }
+  }
 }

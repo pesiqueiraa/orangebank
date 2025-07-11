@@ -242,6 +242,20 @@ class Asset {
   static fromDatabase(row) {
     return new Asset(row.id, row.nome, row.tipo, row.categoria, row.created_at);
   }
+
+  /**
+   * Converter instância para JSON
+   * @returns {Object} Representação em objeto
+   */
+  toJSON() {
+    return {
+      id: this.id,
+      nome: this.nome,
+      tipo: this.tipo,
+      categoria: this.categoria,
+      createdAt: this.createdAt,
+    };
+  }
 }
 
 module.exports = Asset;

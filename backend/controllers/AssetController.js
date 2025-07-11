@@ -464,6 +464,70 @@ class AssetController {
       });
     }
   }
+
+  /**
+   * Simular variação de mercado para todas as ações
+   * POST /api/assets/market/simulate
+   */
+  static async simulateMarketVariation(req, res) {
+    try {
+      const result = await Asset.simulateMarketVariation();
+
+      return res.status(200).json({
+        success: true,
+        message: "Simulação de mercado executada com sucesso",
+        data: result,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Erro ao simular variação de mercado",
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * Atualizar preço de uma ação específica
+   * PUT /api/assets/stocks/:assetId/price
+   */
+  static async updateStockPrice(req, res) {
+    try {
+      const { assetId } = req.params;
+      const { newPrice } = req.body;
+
+      if (!assetId || !newPrice) {
+        return res.status(400).json({
+          success: false,
+          message: "ID do ativo e novo preço são obrigatórios",
+        });
+      }
+
+      if (newPrice <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Preço deve ser maior que zero",
+        });
+      }
+
+      const result = await Asset.updateStockPrice(
+        assetId,
+        parseFloat(newPrice)
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Preço atualizado com sucesso",
+        data: result,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Erro ao atualizar preço",
+        error: error.message,
+      });
+    }
+  }
 }
 
 module.exports = AssetController;

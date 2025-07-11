@@ -304,4 +304,38 @@ class Account {
       );
     }
   }
+  /**
+   * Registrar uma transação
+   * @param {Object} client - Cliente de conexão do banco
+   * @param {string} type - Tipo da transação
+   * @param {number} amount - Valor da transação
+   * @param {number} fee - Taxa da transação
+   * @returns {string} ID da transação criada
+   */
+  async recordTransaction(client, type, amount, fee = 0) {
+    try {
+      const transactionId = `TXN_${Date.now()}_${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
+
+      const query = `
+                INSERT INTO transactions (transaction_id, user_id, account_id, tipo, valor, taxa)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                RETURNING id
+            `;
+
+      const result = await client.query(query, [
+        transactionId,
+        this.userId,
+        this.id,
+        type,
+        amount,
+        fee,
+      ]);
+
+      return result.rows[0].id;
+    } catch (error) {
+      throw new Error(`Erro ao registrar transação: ${error.message}`);
+    }
+  }
 }

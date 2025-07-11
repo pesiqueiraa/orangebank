@@ -28,6 +28,25 @@ class Asset {
       throw new Error(`Erro ao buscar todos os ativos: ${error.message}`);
     }
   }
+
+  /**
+   * Buscar apenas ativos de renda fixa
+   * @returns {Array} Lista de ativos de renda fixa
+   */
+  static async getFixedIncomeAssets() {
+    try {
+      const query = `
+                SELECT id, nome, tipo, categoria, created_at 
+                FROM assets 
+                WHERE tipo = 'renda fixa' 
+                ORDER BY nome
+            `;
+      const result = await db.query(query);
+      return result.rows.map((row) => Asset.fromDatabase(row));
+    } catch (error) {
+      throw new Error(`Erro ao buscar ativos de renda fixa: ${error.message}`);
+    }
+  }
 }
 
 module.exports = Asset;

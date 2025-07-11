@@ -231,6 +231,17 @@ class Asset {
       throw new Error(`Erro ao obter categorias: ${error.message}`);
     }
   }
+
+  // ==================== MÉTODOS DE CONVERSÃO ====================
+
+  /**
+   * Criar instância Asset a partir de dados do banco
+   * @param {Object} row - Linha do banco de dados
+   * @returns {Asset} Instância de Asset
+   */
+  static fromDatabase(row) {
+    return new Asset(row.id, row.nome, row.tipo, row.categoria, row.created_at);
+  }
 }
 
 module.exports = Asset;

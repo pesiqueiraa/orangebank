@@ -114,6 +114,25 @@ class Asset {
       throw new Error(`Erro ao buscar ativos por tipo: ${error.message}`);
     }
   }
+  /**
+   * Buscar ativos por categoria
+   * @param {string} categoria - Categoria dos ativos
+   * @returns {Array} Lista de ativos da categoria
+   */
+  static async findByCategory(categoria) {
+    try {
+      const query = `
+                SELECT id, nome, tipo, categoria, created_at 
+                FROM assets 
+                WHERE categoria = $1 
+                ORDER BY nome
+            `;
+      const result = await db.query(query, [categoria]);
+      return result.rows.map((row) => Asset.fromDatabase(row));
+    } catch (error) {
+      throw new Error(`Erro ao buscar ativos por categoria: ${error.message}`);
+    }
+  }
 }
 
 module.exports = Asset;

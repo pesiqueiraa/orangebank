@@ -103,6 +103,38 @@ class Account {
     }
   }
   /**
+   * Busca conta por número único (para transferências entre usuários)
+   * @param {string} accountNumber - Número da conta (usando ID como número)
+   * @returns {Account|null} Conta encontrada ou null
+   */
+  static async findByAccountNumber(accountNumber) {
+    try {
+      const query = `
+                SELECT id, user_id, type, balance, created_at, updated_at 
+                FROM accounts 
+                WHERE id = $1 AND type = 'corrente'
+            `;
+      const result = await db.query(query, [accountNumber]);
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      const row = result.rows[0];
+      return new Account(
+        row.id,
+        row.user_id,
+        row.type,
+        parseFloat(row.balance),
+        row.created_at,
+        row.updated_at
+      );
+    } catch (error) {
+      throw new Error(`Erro ao buscar conta por número: ${error.message}`);
+    }
+  }
+
+  /**
    * Criar novas contas para um usuário (corrente e investimento)
    * @param {string} userId - ID do usuário
    * @returns {Object} Objeto com ambas as contas criadas

@@ -94,6 +94,26 @@ class Asset {
       throw new Error(`Erro ao buscar ativo por nome: ${error.message}`);
     }
   }
+
+  /**
+   * Buscar ativos por tipo
+   * @param {string} tipo - Tipo do ativo ('ação' ou 'renda fixa')
+   * @returns {Array} Lista de ativos do tipo especificado
+   */
+  static async findByType(tipo) {
+    try {
+      const query = `
+                SELECT id, nome, tipo, categoria, created_at 
+                FROM assets 
+                WHERE tipo = $1 
+                ORDER BY nome
+            `;
+      const result = await db.query(query, [tipo]);
+      return result.rows.map((row) => Asset.fromDatabase(row));
+    } catch (error) {
+      throw new Error(`Erro ao buscar ativos por tipo: ${error.message}`);
+    }
+  }
 }
 
 module.exports = Asset;

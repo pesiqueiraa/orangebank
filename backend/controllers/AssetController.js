@@ -26,6 +26,66 @@ class AssetController {
       });
     }
   }
+
+  /**
+   * Buscar ativos por termo de pesquisa
+   * GET /api/assets/search?q=termo
+   */
+  static async searchAssets(req, res) {
+    try {
+      const { q } = req.query;
+      
+      if (!q || q.trim() === '') {
+        return res.status(400).json({
+          success: false,
+          message: 'Termo de busca é obrigatório',
+          example: '/api/assets/search?q=BOIB3'
+        });
+      }
+
+      const assets = await Asset.searchAssets(q.trim());
+      
+      return res.status(200).json({
+        success: true,
+        message: `Busca realizada para: "${q}"`,
+        data: assets,
+        total: assets.length,
+        searchTerm: q.trim()
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: 'Erro ao buscar ativos',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Buscar ativos com filtros avançados
+   * POST /api/assets/search-advanced
+   */
+  static async searchAssetsAdvanced(req, res) {
+    try {
+      const filters = req.body;
+      
+      const assets = await Asset.searchAssetsWithFilters(filters);
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Busca avançada realizada com sucesso',
+        data: assets,
+        total: assets.length,
+        filters: filters
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: 'Erro na busca avançada',
+        error: error.message
+      });
+    }
+  }
 }
 
 module.exports = AssetController;

@@ -222,4 +222,16 @@ class Account {
       client.release();
     }
   }
+
+  // ==================== MÉTODOS DE VALIDAÇÃO ====================
+
+  /**
+   * Verificar se há saldo insuficiente
+   * @param {number} amount - Valor a ser verificado
+   * @returns {boolean} True se saldo insuficiente
+   */
+  hasInsufficientBalance(amount) {
+    return this.balance < amount;
+  }
+  
 }

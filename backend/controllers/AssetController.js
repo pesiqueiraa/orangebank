@@ -234,6 +234,43 @@ class AssetController {
       });
     }
   }
+  /**
+   * Buscar produto de renda fixa por ID
+   * GET /api/assets/fixed-income/:id
+   */
+  static async getFixedIncomeById(req, res) {
+    try {
+      const { id } = req.params;
+
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message: "ID do produto é obrigatório",
+        });
+      }
+
+      const product = await Asset.getFixedIncomeById(id);
+
+      if (!product) {
+        return res.status(404).json({
+          success: false,
+          message: "Produto de renda fixa não encontrado",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Produto encontrado com sucesso",
+        data: product,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Erro ao buscar produto de renda fixa",
+        error: error.message,
+      });
+    }
+  }
 }
 
 module.exports = AssetController;

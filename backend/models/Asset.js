@@ -49,6 +49,25 @@ class Asset {
   }
 
   /**
+   * Buscar apenas ações
+   * @returns {Array} Lista de ações
+   */
+  static async getStocks() {
+    try {
+      const query = `
+        SELECT id, nome, tipo, categoria, created_at 
+        FROM assets 
+        WHERE tipo = 'ação' 
+        ORDER BY nome
+      `;
+      const result = await db.query(query);
+      return result.rows.map((row) => Asset.fromDatabase(row));
+    } catch (error) {
+      throw new Error(`Erro ao buscar ações: ${error.message}`);
+    }
+  }
+
+  /**
    * Buscar ativo específico por ID
    * @param {string} id - ID do ativo
    * @returns {Asset|null} Ativo encontrado ou null

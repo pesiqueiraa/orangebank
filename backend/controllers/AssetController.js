@@ -173,6 +173,43 @@ class AssetController {
       });
     }
   }
+  /**
+   * Buscar ação por símbolo
+   * GET /api/assets/stocks/:symbol
+   */
+  static async getStockBySymbol(req, res) {
+    try {
+      const { symbol } = req.params;
+
+      if (!symbol) {
+        return res.status(400).json({
+          success: false,
+          message: "Símbolo é obrigatório",
+        });
+      }
+
+      const stock = await Asset.findBySymbol(symbol.toUpperCase());
+
+      if (!stock) {
+        return res.status(404).json({
+          success: false,
+          message: "Ação não encontrada",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Ação encontrada com sucesso",
+        data: stock,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Erro ao buscar ação",
+        error: error.message,
+      });
+    }
+  }
 }
 
 module.exports = AssetController;

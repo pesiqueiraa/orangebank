@@ -271,4 +271,37 @@ class Account {
       );
     }
   }
+  // ==================== MÉTODOS DE HISTÓRICO ====================
+
+  /**
+   * Obter histórico de transações da conta
+   * @param {number} limit - Limite de registros (padrão: 10)
+   * @returns {Array} Histórico de transações
+   */
+  async getTransactionHistory(limit = 10) {
+    try {
+      const query = `
+                SELECT 
+                    t.id,
+                    t.transaction_id,
+                    t.tipo,
+                    t.valor,
+                    t.taxa,
+                    t.created_at,
+                    tf.to_account_id,
+                    tf.status as transfer_status
+                FROM transactions t
+                LEFT JOIN transfers tf ON t.id = tf.transaction_ref
+                WHERE t.account_id = $1
+                ORDER BY t.created_at DESC
+                LIMIT $2
+            `;
+      const result = await db.query(query, [this.id, limit]);
+      return result.rows;
+    } catch (error) {
+      throw new Error(
+        `Erro ao obter histórico de transações: ${error.message}`
+      );
+    }
+  }
 }

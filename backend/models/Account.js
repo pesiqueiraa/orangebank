@@ -338,21 +338,35 @@ class Account {
       throw new Error(`Erro ao registrar transação: ${error.message}`);
     }
   }
-      /**
-     * Atualizar saldo da conta
-     * @param {number} newBalance - Novo saldo
-     */
-    async updateBalance(newBalance) {
-        try {
-            const query = `
+  /**
+   * Atualizar saldo da conta
+   * @param {number} newBalance - Novo saldo
+   */
+  async updateBalance(newBalance) {
+    try {
+      const query = `
                 UPDATE accounts 
                 SET balance = $1, updated_at = NOW() 
                 WHERE id = $2
             `;
-            await db.query(query, [newBalance, this.id]);
-            this.balance = newBalance;
-        } catch (error) {
-            throw new Error(`Erro ao atualizar saldo: ${error.message}`);
-        }
+      await db.query(query, [newBalance, this.id]);
+      this.balance = newBalance;
+    } catch (error) {
+      throw new Error(`Erro ao atualizar saldo: ${error.message}`);
     }
+  }
+  /**
+   * Converter para objeto JSON
+   * @returns {Object} Representação em objeto da conta
+   */
+  toJSON() {
+    return {
+      id: this.id,
+      userId: this.userId,
+      type: this.type,
+      balance: this.balance,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+    };
+  }
 }

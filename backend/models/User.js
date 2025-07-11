@@ -85,10 +85,7 @@ class User {
   }
   // Método para encontrar um usuário pelo CPF
   static async findByCpf(cpf) {
-    const result = await db.query(
-      `SELECT * FROM users WHERE cpf = $1`,
-      [cpf]
-    );
+    const result = await db.query(`SELECT * FROM users WHERE cpf = $1`, [cpf]);
 
     if (result.rows.length === 0) return null;
 
@@ -106,6 +103,16 @@ class User {
     );
   }
 
+  static async findAll() {
+    try {
+      const result = await db.query("SELECT * FROM users ORDER BY nome ASC");
+      return result.rows.map(
+        (row) => new User(row.id, row.nome, row.email, row.senha)
+      );
+    } catch (error) {
+      throw new Error("Erro ao buscar usuários: " + error.message);
+    }
+  }
 }
 
 // Exporta a classe User para uso nos controllers e rotas

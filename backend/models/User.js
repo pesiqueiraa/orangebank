@@ -83,6 +83,29 @@ class User {
       user.updated_at
     );
   }
+  // Método para encontrar um usuário pelo CPF
+  static async findByCpf(cpf) {
+    const result = await db.query(
+      `SELECT * FROM users WHERE cpf = $1`,
+      [cpf]
+    );
+
+    if (result.rows.length === 0) return null;
+
+    const user = result.rows[0];
+
+    return new User(
+      user.id,
+      user.name,
+      user.email,
+      user.cpf,
+      user.birth_date,
+      user.password,
+      user.created_at,
+      user.updated_at
+    );
+  }
+
 }
 
 // Exporta a classe User para uso nos controllers e rotas

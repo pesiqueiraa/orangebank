@@ -713,6 +713,43 @@ class AssetController {
       });
     }
   }
+  /**
+   * Buscar ativo com dados de preço (se aplicável)
+   * GET /api/assets/:id/with-price
+   */
+  static async getAssetWithPrice(req, res) {
+    try {
+      const { id } = req.params;
+
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message: "ID do ativo é obrigatório",
+        });
+      }
+
+      const asset = await Asset.getAssetWithPrice(id);
+
+      if (!asset) {
+        return res.status(404).json({
+          success: false,
+          message: "Ativo não encontrado",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Ativo com preços obtido com sucesso",
+        data: asset,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Erro ao buscar ativo com preços",
+        error: error.message,
+      });
+    }
+  }
 }
 
 module.exports = AssetController;

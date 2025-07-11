@@ -782,17 +782,8 @@ class Asset {
       const grossReturn = principal * (Math.pow(1 + dailyRate, daysToMaturity) - 1);
       const totalGross = principal + grossReturn;
       
-      // Calcular IR sobre renda fixa (regressivo)
-      let taxRate;
-      if (daysToMaturity <= 180) {
-        taxRate = 0.225; // 22,5%
-      } else if (daysToMaturity <= 360) {
-        taxRate = 0.20;  // 20%
-      } else if (daysToMaturity <= 720) {
-        taxRate = 0.175; // 17,5%
-      } else {
-        taxRate = 0.15;  // 15%
-      }
+      // Calcular IR sobre renda fixa (fixo 22% conforme regras de negócio)
+      const taxRate = 0.22; // 22% fixo para renda fixa
       
       const tax = grossReturn * taxRate;
       const netReturn = grossReturn - tax;
@@ -833,6 +824,77 @@ class Asset {
       };
     } catch (error) {
       console.error('Erro ao validar investimento mínimo:', error);
+      throw error;
+    }
+  }
+
+  // ==================== MÉTODOS DE CÁLCULO DE IMPOSTOS ====================
+
+  /**
+   * Calcular imposto de renda para venda de ações (15% sobre lucro)
+   * @param {number} sellPrice - Preço de venda unitário
+   * @param {number} buyPrice - Preço de compra médio
+   * @param {number} quantity - Quantidade vendida
+   * @returns {Object} Cálculo de impostos
+   */
+  static calculateStockTax(sellPrice, buyPrice, quantity) {
+    try {
+      const grossValue = sellPrice * quantity;
+      const totalCost = buyPrice * quantity;
+      const profit = grossValue - totalCost;
+      
+      // IR de 15% apenas se houver lucro
+      let tax = 0;
+      if (profit > 0) {
+        tax = profit * 0.15; // 15% conforme regras de negócio
+      }
+      
+      const netValue = grossValue - tax;
+      
+      return {
+        grossValue: parseFloat(grossValue.toFixed(2)),
+        totalCost: parseFloat(totalCost.toFixed(2)),
+        profit: parseFloat(profit.toFixed(2)),
+        tax: parseFloat(tax.toFixed(2)),
+        netValue: parseFloat(netValue.toFixed(2)),
+        taxRate: profit > 0 ? 0.15 : 0,
+        isProfit: profit > 0
+      };
+    } catch (error) {
+      console.error('Erro ao calcular imposto de ações:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Calcular imposto de renda para resgate de renda fixa (22% sobre rendimento)
+   * @param {number} redeemValue - Valor de resgate
+   * @param {number} investedValue - Valor investido
+   * @returns {Object} Cálculo de impostos
+   */
+  static calculateFixedIncomeTax(redeemValue, investedValue) {
+    try {
+      const earnings = redeemValue - investedValue;
+      
+      // IR de 22% apenas se houver rendimento
+      let tax = 0;
+      if (earnings > 0) {
+        tax = earnings * 0.22; // 22% conforme regras de negócio
+      }
+      
+      const netValue = redeemValue - tax;
+      
+      return {
+        redeemValue: parseFloat(redeemValue.toFixed(2)),
+        investedValue: parseFloat(investedValue.toFixed(2)),
+        earnings: parseFloat(earnings.toFixed(2)),
+        tax: parseFloat(tax.toFixed(2)),
+        netValue: parseFloat(netValue.toFixed(2)),
+        taxRate: earnings > 0 ? 0.22 : 0,
+        hasEarnings: earnings > 0
+      };
+    } catch (error) {
+      console.error('Erro ao calcular imposto de renda fixa:', error);
       throw error;
     }
   }

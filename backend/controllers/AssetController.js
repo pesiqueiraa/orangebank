@@ -210,6 +210,30 @@ class AssetController {
       });
     }
   }
+  // ==================== RENDA FIXA ====================
+
+  /**
+   * Listar todos os produtos de renda fixa
+   * GET /api/assets/fixed-income
+   */
+  static async getAllFixedIncomes(req, res) {
+    try {
+      const products = await Asset.getAllFixedIncomes();
+
+      return res.status(200).json({
+        success: true,
+        message: "Produtos de renda fixa listados com sucesso",
+        data: products,
+        total: products.length,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Erro ao listar produtos de renda fixa",
+        error: error.message,
+      });
+    }
+  }
 }
 
 module.exports = AssetController;

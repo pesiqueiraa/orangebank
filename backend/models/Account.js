@@ -223,6 +223,56 @@ class Account {
     }
   }
 
+  /**
+   * Realizar saque (apenas conta corrente)
+   * @param {number} amount - Valor do saque
+   * @returns {Object} Resultado da operação
+   */
+  async withdraw(amount) {
+    if (this.type !== "corrente") {
+      throw new Error("Saques só podem ser realizados na conta corrente");
+    }
+
+    if (amount <= 0) {
+      throw new Error("Valor do saque deve ser maior que zero");
+    }
+
+    if (this.hasInsufficientBalance(amount)) {
+      throw new Error("Saldo insuficiente para realizar o saque");
+    }
+
+    const client = await db.getClient();
+    try {
+      await client.query("BEGIN");
+
+      // Atualizar saldo da conta
+      const updateQuery = `
+                UPDATE accounts 
+                SET balance = balance - $1, updated_at = NOW() 
+                WHERE id = $2 
+                RETURNING balance
+            `;
+      const result = await client.query(updateQuery, [amount, this.id]);
+      this.balance = parseFloat(result.rows[0].balance);
+
+      // Registrar transação
+      await this.recordTransaction(client, "saque", amount, 0);
+
+      await client.query("COMMIT");
+
+      return {
+        success: true,
+        message: "Saque realizado com sucesso",
+        newBalance: this.balance,
+      };
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw new Error(`Erro ao realizar saque: ${error.message}`);
+    } finally {
+      client.release();
+    }
+  }
+
   // ==================== MÉTODOS DE VALIDAÇÃO ====================
 
   /**

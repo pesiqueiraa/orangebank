@@ -233,5 +233,20 @@ class Account {
   hasInsufficientBalance(amount) {
     return this.balance < amount;
   }
-  
+  /**
+   * Validar valor de transferência
+   * @param {number} amount - Valor da transferência
+   * @returns {Object} Resultado da validação
+   */
+  validateTransferAmount(amount) {
+    if (amount <= 0) {
+      return { valid: false, message: "Valor deve ser maior que zero" };
+    }
+
+    if (this.hasInsufficientBalance(amount)) {
+      return { valid: false, message: "Saldo insuficiente" };
+    }
+
+    return { valid: true };
+  }
 }

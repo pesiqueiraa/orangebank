@@ -528,6 +528,91 @@ class AssetController {
       });
     }
   }
+    // ==================== CÁLCULOS DE IMPOSTOS ====================
+
+  /**
+   * Calcular imposto para venda de ações
+   * POST /api/assets/calculate-stock-tax
+   */
+  static async calculateStockTax(req, res) {
+    try {
+      const { sellPrice, buyPrice, quantity } = req.body;
+      
+      if (!sellPrice || !buyPrice || !quantity) {
+        return res.status(400).json({
+          success: false,
+          message: 'Preço de venda, preço de compra e quantidade são obrigatórios'
+        });
+      }
+
+      if (sellPrice <= 0 || buyPrice <= 0 || quantity <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Todos os valores devem ser maiores que zero'
+        });
+      }
+
+      const calculation = Asset.calculateStockTax(
+        parseFloat(sellPrice),
+        parseFloat(buyPrice),
+        parseFloat(quantity)
+      );
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Imposto calculado com sucesso',
+        data: calculation
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: 'Erro ao calcular imposto de ações',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Calcular imposto para resgate de renda fixa
+   * POST /api/assets/calculate-fixed-income-tax
+   */
+  static async calculateFixedIncomeTax(req, res) {
+    try {
+      const { redeemValue, investedValue } = req.body;
+      
+      if (!redeemValue || !investedValue) {
+        return res.status(400).json({
+          success: false,
+          message: 'Valor de resgate e valor investido são obrigatórios'
+        });
+      }
+
+      if (redeemValue <= 0 || investedValue <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Valores devem ser maiores que zero'
+        });
+      }
+
+      const calculation = Asset.calculateFixedIncomeTax(
+        parseFloat(redeemValue),
+        parseFloat(investedValue)
+      );
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Imposto calculado com sucesso',
+        data: calculation
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: 'Erro ao calcular imposto de renda fixa',
+        error: error.message
+      });
+    }
+  }
+
 }
 
 module.exports = AssetController;

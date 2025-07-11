@@ -382,6 +382,48 @@ class AssetController {
       });
     }
   }
+  /**
+   * Calcular rendimento projetado de renda fixa
+   * POST /api/assets/fixed-income/calculate-return
+   */
+  static async calculateFixedIncomeReturn(req, res) {
+    try {
+      const { principal, annualRate, maturityDate } = req.body;
+
+      if (!principal || !annualRate || !maturityDate) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Valor principal, taxa anual e data de vencimento são obrigatórios",
+        });
+      }
+
+      if (principal <= 0 || annualRate <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Valor principal e taxa devem ser maiores que zero",
+        });
+      }
+
+      const calculation = Asset.calculateFixedIncomeReturn(
+        parseFloat(principal),
+        parseFloat(annualRate),
+        maturityDate
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Rendimento calculado com sucesso",
+        data: calculation,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Erro ao calcular rendimento",
+        error: error.message,
+      });
+    }
+  }
 }
 
 module.exports = AssetController;

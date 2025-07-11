@@ -424,6 +424,46 @@ class AssetController {
       });
     }
   }
+  /**
+   * Validar investimento mínimo
+   * POST /api/assets/fixed-income/validate-investment
+   */
+  static async validateMinimumInvestment(req, res) {
+    try {
+      const { fixedIncomeId, amount } = req.body;
+
+      if (!fixedIncomeId || !amount) {
+        return res.status(400).json({
+          success: false,
+          message: "ID do produto e valor são obrigatórios",
+        });
+      }
+
+      if (amount <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Valor deve ser maior que zero",
+        });
+      }
+
+      const validation = await Asset.validateMinimumInvestment(
+        fixedIncomeId,
+        parseFloat(amount)
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Validação realizada com sucesso",
+        data: validation,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Erro ao validar investimento mínimo",
+        error: error.message,
+      });
+    }
+  }
 }
 
 module.exports = AssetController;

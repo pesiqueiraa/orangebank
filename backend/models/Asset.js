@@ -133,6 +133,22 @@ class Asset {
       throw new Error(`Erro ao buscar ativos por categoria: ${error.message}`);
     }
   }
+
+  // ==================== MÉTODOS DE VALIDAÇÃO ====================
+
+  /**
+   * Verificar se ativo existe
+   * @param {string} id - ID do ativo
+   * @returns {boolean} True se ativo existe
+   */
+  static async exists(id) {
+    try {
+      const asset = await Asset.findById(id);
+      return asset !== null;
+    } catch (error) {
+      return false;
+    }
+  }
 }
 
 module.exports = Asset;

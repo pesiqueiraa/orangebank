@@ -149,6 +149,28 @@ class Asset {
       return false;
     }
   }
+
+  // ==================== RELATÓRIOS E ESTATÍSTICAS ====================
+
+  /**
+   * Obter estatísticas dos ativos
+   * @returns {Object} Estatísticas
+   */
+  static async getStatistics() {
+    try {
+      const query = `
+                SELECT 
+                    COUNT(*) as total_assets,
+                    COUNT(CASE WHEN tipo = 'ação' THEN 1 END) as total_stocks,
+                    COUNT(CASE WHEN tipo = 'renda fixa' THEN 1 END) as total_fixed_income
+                FROM assets
+            `;
+      const result = await db.query(query);
+      return result.rows[0];
+    } catch (error) {
+      throw new Error(`Erro ao obter estatísticas: ${error.message}`);
+    }
+  }
 }
 
 module.exports = Asset;

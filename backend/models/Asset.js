@@ -71,6 +71,29 @@ class Asset {
       throw new Error(`Erro ao buscar ativo por ID: ${error.message}`);
     }
   }
+  /**
+   * Buscar ativo específico por nome
+   * @param {string} nome - Nome do ativo
+   * @returns {Asset|null} Ativo encontrado ou null
+   */
+  static async findByName(nome) {
+    try {
+      const query = `
+                SELECT id, nome, tipo, categoria, created_at 
+                FROM assets 
+                WHERE nome = $1
+            `;
+      const result = await db.query(query, [nome]);
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      return Asset.fromDatabase(result.rows[0]);
+    } catch (error) {
+      throw new Error(`Erro ao buscar ativo por nome: ${error.message}`);
+    }
+  }
 }
 
 module.exports = Asset;

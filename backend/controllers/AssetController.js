@@ -302,6 +302,86 @@ class AssetController {
       });
     }
   }
+  /**
+   * Buscar produtos de renda fixa por tipo de taxa
+   * GET /api/assets/fixed-income/rate-type/:rateType
+   */
+  static async getFixedIncomesByRateType(req, res) {
+    try {
+      const { rateType } = req.params;
+
+      if (!rateType || !["pre", "pos"].includes(rateType)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Tipo de taxa deve ser "pre" ou "pos"',
+        });
+      }
+
+      const products = await Asset.getFixedIncomesByRateType(rateType);
+
+      return res.status(200).json({
+        success: true,
+        message: `Produtos ${rateType}-fixados listados com sucesso`,
+        data: products,
+        total: products.length,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Erro ao buscar produtos por tipo de taxa",
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * Buscar produtos por faixa de investimento mínimo
+   * GET /api/assets/fixed-income/investment-range?min=1000&max=5000
+   */
+  static async getFixedIncomesByInvestmentRange(req, res) {
+    try {
+      const { min, max } = req.query;
+
+      if (!min) {
+        return res.status(400).json({
+          success: false,
+          message: "Valor mínimo é obrigatório",
+        });
+      }
+
+      const minAmount = parseFloat(min);
+      const maxAmount = max ? parseFloat(max) : null;
+
+      if (minAmount <= 0 || (maxAmount && maxAmount <= 0)) {
+        return res.status(400).json({
+          success: false,
+          message: "Valores devem ser maiores que zero",
+        });
+      }
+
+      const products = await Asset.getFixedIncomesByInvestmentRange(
+        minAmount,
+        maxAmount
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Produtos na faixa de investimento listados com sucesso",
+        data: products,
+        total: products.length,
+        filter: {
+          minAmount,
+          maxAmount,
+        },
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Erro ao buscar produtos por faixa de investimento",
+        error: error.message,
+      });
+    }
+  }
 }
 
 module.exports = AssetController;

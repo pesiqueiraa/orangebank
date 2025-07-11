@@ -13,6 +13,32 @@ class User {
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
   }
+
+  // Método estático para criar um novo usuário 
+  static async create({ name, email, cpf, birthDate, password }) {
+    const result = await db.query(
+      `
+      INSERT INTO users (name, email, cpf, birth_date, password, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      RETURNING *
+      `,
+      [name, email, cpf, birthDate, password]
+    );
+
+    const user = result.rows[0];
+
+    return new User(
+      user.id,
+      user.name,
+      user.email,
+      user.cpf,
+      user.birth_date,
+      user.password,
+      user.created_at,
+      user.updated_at
+    );
+  }
+
 }
 
 // Exporta a classe User para uso nos controllers e rotas

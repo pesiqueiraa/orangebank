@@ -528,7 +528,7 @@ class AssetController {
       });
     }
   }
-    // ==================== CÁLCULOS DE IMPOSTOS ====================
+  // ==================== CÁLCULOS DE IMPOSTOS ====================
 
   /**
    * Calcular imposto para venda de ações
@@ -537,18 +537,19 @@ class AssetController {
   static async calculateStockTax(req, res) {
     try {
       const { sellPrice, buyPrice, quantity } = req.body;
-      
+
       if (!sellPrice || !buyPrice || !quantity) {
         return res.status(400).json({
           success: false,
-          message: 'Preço de venda, preço de compra e quantidade são obrigatórios'
+          message:
+            "Preço de venda, preço de compra e quantidade são obrigatórios",
         });
       }
 
       if (sellPrice <= 0 || buyPrice <= 0 || quantity <= 0) {
         return res.status(400).json({
           success: false,
-          message: 'Todos os valores devem ser maiores que zero'
+          message: "Todos os valores devem ser maiores que zero",
         });
       }
 
@@ -557,17 +558,17 @@ class AssetController {
         parseFloat(buyPrice),
         parseFloat(quantity)
       );
-      
+
       return res.status(200).json({
         success: true,
-        message: 'Imposto calculado com sucesso',
-        data: calculation
+        message: "Imposto calculado com sucesso",
+        data: calculation,
       });
     } catch (error) {
       return res.status(500).json({
         success: false,
-        message: 'Erro ao calcular imposto de ações',
-        error: error.message
+        message: "Erro ao calcular imposto de ações",
+        error: error.message,
       });
     }
   }
@@ -579,18 +580,18 @@ class AssetController {
   static async calculateFixedIncomeTax(req, res) {
     try {
       const { redeemValue, investedValue } = req.body;
-      
+
       if (!redeemValue || !investedValue) {
         return res.status(400).json({
           success: false,
-          message: 'Valor de resgate e valor investido são obrigatórios'
+          message: "Valor de resgate e valor investido são obrigatórios",
         });
       }
 
       if (redeemValue <= 0 || investedValue <= 0) {
         return res.status(400).json({
           success: false,
-          message: 'Valores devem ser maiores que zero'
+          message: "Valores devem ser maiores que zero",
         });
       }
 
@@ -598,21 +599,120 @@ class AssetController {
         parseFloat(redeemValue),
         parseFloat(investedValue)
       );
-      
+
       return res.status(200).json({
         success: true,
-        message: 'Imposto calculado com sucesso',
-        data: calculation
+        message: "Imposto calculado com sucesso",
+        data: calculation,
       });
     } catch (error) {
       return res.status(500).json({
         success: false,
-        message: 'Erro ao calcular imposto de renda fixa',
-        error: error.message
+        message: "Erro ao calcular imposto de renda fixa",
+        error: error.message,
+      });
+    }
+  }
+  // ==================== RELATÓRIOS E ESTATÍSTICAS ====================
+
+  /**
+   * Obter estatísticas gerais dos ativos
+   * GET /api/assets/statistics
+   */
+  static async getStatistics(req, res) {
+    try {
+      const stats = await Asset.getStatistics();
+
+      return res.status(200).json({
+        success: true,
+        message: "Estatísticas obtidas com sucesso",
+        data: stats,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Erro ao obter estatísticas",
+        error: error.message,
       });
     }
   }
 
+  /**
+   * Obter distribuição por categoria
+   * GET /api/assets/category-distribution
+   */
+  static async getCategoryDistribution(req, res) {
+    try {
+      const distribution = await Asset.getCategoryDistribution();
+
+      return res.status(200).json({
+        success: true,
+        message: "Distribuição por categoria obtida com sucesso",
+        data: distribution,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Erro ao obter distribuição por categoria",
+        error: error.message,
+      });
+    }
+  }
+  /**
+   * Listar todas as categorias disponíveis
+   * GET /api/assets/categories
+   */
+  static async getAllCategories(req, res) {
+    try {
+      const categories = await Asset.getAllCategories();
+
+      return res.status(200).json({
+        success: true,
+        message: "Categorias listadas com sucesso",
+        data: categories,
+        total: categories.length,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Erro ao listar categorias",
+        error: error.message,
+      });
+    }
+  }
+  /**
+   * Buscar produtos próximos ao vencimento
+   * GET /api/assets/fixed-income/near-maturity?days=30
+   */
+  static async getFixedIncomesNearMaturity(req, res) {
+    try {
+      const { days } = req.query;
+      const daysToMaturity = days ? parseInt(days) : 30;
+
+      if (daysToMaturity <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Número de dias deve ser maior que zero",
+        });
+      }
+
+      const products = await Asset.getFixedIncomesNearMaturity(daysToMaturity);
+
+      return res.status(200).json({
+        success: true,
+        message: `Produtos próximos ao vencimento (${daysToMaturity} dias) listados com sucesso`,
+        data: products,
+        total: products.length,
+        daysFilter: daysToMaturity,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Erro ao buscar produtos próximos ao vencimento",
+        error: error.message,
+      });
+    }
+  }
 }
 
 module.exports = AssetController;

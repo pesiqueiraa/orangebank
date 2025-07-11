@@ -194,6 +194,24 @@ class Asset {
       );
     }
   }
+
+  /**
+   * Listar todas as categorias
+   * @returns {Array} Lista de categorias
+   */
+  static async getAllCategories() {
+    try {
+      const query = `
+                SELECT DISTINCT categoria 
+                FROM assets 
+                ORDER BY categoria
+            `;
+      const result = await db.query(query);
+      return result.rows.map((row) => row.categoria);
+    } catch (error) {
+      throw new Error(`Erro ao obter categorias: ${error.message}`);
+    }
+  }
 }
 
 module.exports = Asset;

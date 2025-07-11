@@ -30,6 +30,201 @@ class Asset {
   }
 
   /**
+   * Buscar ativos por termo de pesquisa (nome, símbolo ou categoria)
+   * @param {string} searchTerm - Termo de busca
+   * @returns {Array} Lista de ativos encontrados
+   */
+  static async searchAssets(searchTerm) {
+    try {
+      if (!searchTerm || searchTerm.trim() === '') {
+        return [];
+      }
+
+      const term = `%${searchTerm.toLowerCase()}%`;
+      
+      const query = `
+        SELECT DISTINCT
+          a.id, a.nome, a.tipo, a.categoria, a.created_at,
+          s.symbol, s.current_price, s.daily_variation,
+          fi.id as fixed_income_id, fi.rate, fi.rate_type, fi.maturity
+        FROM assets a
+        LEFT JOIN stocks s ON a.id = s.asset_id
+        LEFT JOIN fixed_income fi ON a.id = fi.asset_id
+        WHERE 
+          LOWER(a.nome) LIKE $1 
+          OR LOWER(a.categoria) LIKE $1
+          OR LOWER(s.symbol) LIKE $1
+        ORDER BY 
+          CASE 
+            WHEN LOWER(a.nome) LIKE $1 THEN 1
+            WHEN LOWER(s.symbol) LIKE $1 THEN 2
+            WHEN LOWER(a.categoria) LIKE $1 THEN 3
+            ELSE 4
+          END,
+          a.nome
+      `;
+      
+      const result = await db.query(query, [term]);
+      
+      return result.rows.map((row) => {
+        const baseAsset = Asset.fromDatabase(row).toJSON();
+        
+        // Adicionar dados de ação se existir
+        if (row.symbol) {
+          return {
+            ...baseAsset,
+            symbol: row.symbol,
+            currentPrice: parseFloat(row.current_price || 0),
+            dailyVariation: parseFloat(row.daily_variation || 0)
+          };
+        }
+        
+        // Adicionar dados de renda fixa se existir
+        if (row.fixed_income_id) {
+          return {
+            ...baseAsset,
+            fixedIncomeId: row.fixed_income_id,
+            rate: parseFloat(row.rate || 0),
+            rateType: row.rate_type,
+            maturity: row.maturity
+          };
+        }
+        
+        return baseAsset;
+      });
+    } catch (error) {
+      throw new Error(`Erro ao buscar ativos: ${error.message}`);
+    }
+  }
+
+  /**
+   * Buscar ativos com filtros avançados
+   * @param {Object} filters - Filtros de busca
+   * @returns {Array} Lista de ativos filtrados
+   */
+  static async searchAssetsWithFilters(filters = {}) {
+    try {
+      const { 
+        searchTerm, 
+        tipo, 
+        categoria, 
+        minPrice, 
+        maxPrice,
+        rateType,
+        limit = 50 
+      } = filters;
+
+      let conditions = [];
+      let params = [];
+      let paramCount = 0;
+
+      // Busca por termo
+      if (searchTerm && searchTerm.trim() !== '') {
+        paramCount++;
+        const term = `%${searchTerm.toLowerCase()}%`;
+        conditions.push(`(
+          LOWER(a.nome) LIKE $${paramCount} 
+          OR LOWER(a.categoria) LIKE $${paramCount}
+          OR LOWER(s.symbol) LIKE $${paramCount}
+        )`);
+        params.push(term);
+      }
+
+      // Filtro por tipo
+      if (tipo) {
+        paramCount++;
+        conditions.push(`a.tipo = $${paramCount}`);
+        params.push(tipo);
+      }
+
+      // Filtro por categoria
+      if (categoria) {
+        paramCount++;
+        conditions.push(`a.categoria = $${paramCount}`);
+        params.push(categoria);
+      }
+
+      // Filtro por preço mínimo (apenas ações)
+      if (minPrice) {
+        paramCount++;
+        conditions.push(`s.current_price >= $${paramCount}`);
+        params.push(parseFloat(minPrice));
+      }
+
+      // Filtro por preço máximo (apenas ações)
+      if (maxPrice) {
+        paramCount++;
+        conditions.push(`s.current_price <= $${paramCount}`);
+        params.push(parseFloat(maxPrice));
+      }
+
+      // Filtro por tipo de taxa (apenas renda fixa)
+      if (rateType) {
+        paramCount++;
+        conditions.push(`fi.rate_type = $${paramCount}`);
+        params.push(rateType);
+      }
+
+      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+      
+      paramCount++;
+      params.push(parseInt(limit));
+
+      const query = `
+        SELECT DISTINCT
+          a.id, a.nome, a.tipo, a.categoria, a.created_at,
+          s.symbol, s.current_price, s.daily_variation,
+          fi.id as fixed_income_id, fi.rate, fi.rate_type, fi.maturity, fi.minimum_investment
+        FROM assets a
+        LEFT JOIN stocks s ON a.id = s.asset_id
+        LEFT JOIN fixed_income fi ON a.id = fi.asset_id
+        ${whereClause}
+        ORDER BY 
+          CASE 
+            WHEN LOWER(a.nome) LIKE COALESCE($1, '') THEN 1
+            WHEN LOWER(s.symbol) LIKE COALESCE($1, '') THEN 2
+            WHEN LOWER(a.categoria) LIKE COALESCE($1, '') THEN 3
+            ELSE 4
+          END,
+          a.nome
+        LIMIT $${paramCount}
+      `;
+      
+      const result = await db.query(query, params);
+      
+      return result.rows.map((row) => {
+        const baseAsset = Asset.fromDatabase(row).toJSON();
+        
+        // Adicionar dados de ação se existir
+        if (row.symbol) {
+          return {
+            ...baseAsset,
+            symbol: row.symbol,
+            currentPrice: parseFloat(row.current_price || 0),
+            dailyVariation: parseFloat(row.daily_variation || 0)
+          };
+        }
+        
+        // Adicionar dados de renda fixa se existir
+        if (row.fixed_income_id) {
+          return {
+            ...baseAsset,
+            fixedIncomeId: row.fixed_income_id,
+            rate: parseFloat(row.rate || 0),
+            rateType: row.rate_type,
+            maturity: row.maturity,
+            minimumInvestment: parseFloat(row.minimum_investment || 0)
+          };
+        }
+        
+        return baseAsset;
+      });
+    } catch (error) {
+      throw new Error(`Erro ao buscar ativos com filtros: ${error.message}`);
+    }
+  }
+
+  /**
    * Buscar apenas ativos de renda fixa
    * @returns {Array} Lista de ativos de renda fixa
    */

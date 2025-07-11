@@ -13,6 +13,59 @@ class UserController {
     }
   }
 
+  //POST /users/login - Método para autenticação genérica (email ou CPF)
+  static async loginUser(req, res) {
+    const { login, password } = req.body;
+
+    try {
+      // Validar campos obrigatórios
+      if (!login || !password) {
+        return res.status(400).json({
+          error: "Login e senha são obrigatórios",
+        });
+      }
+
+      // Verificar se o login é um email (contém @) ou CPF
+      const isEmail = login.includes('@');
+      let user;
+
+      if (isEmail) {
+        user = await User.findByEmail(login);
+      } else {
+        user = await User.findByCpf(login);
+      }
+
+      if (!user) {
+        return res.status(401).json({
+          error: "Credenciais inválidas",
+        });
+      }
+
+      // Verificar senha
+      if (user.password !== password) {
+        return res.status(401).json({
+          error: "Credenciais inválidas",
+        });
+      }
+
+      // Criar resposta sem a senha
+      const userResponse = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        cpf: user.cpf,
+        birthDate: user.birthDate
+      };
+
+      res.status(200).json({
+        message: "Login realizado com sucesso",
+        user: userResponse,
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
   //POST /users - Método para autenticação com email e senha
   static async loginWithEmail(req, res) {
     const { email, password } = req.body;
@@ -39,6 +92,15 @@ class UserController {
           error: "Credenciais inválidas",
         });
       }
+
+      // Criar resposta sem a senha
+      const userResponse = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        cpf: user.cpf,
+        birthDate: user.birthDate
+      };
 
       res.status(200).json({
         message: "Login realizado com sucesso",
@@ -75,6 +137,16 @@ class UserController {
           error: "Credenciais inválidas",
         });
       }
+
+      // Criar resposta sem a senha
+      const userResponse = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        cpf: user.cpf,
+        birthDate: user.birthDate
+      };
+
       res.status(200).json({
         message: "Login realizado com sucesso",
         user: userResponse,
@@ -103,6 +175,16 @@ class UserController {
           error: "Usuário não encontrado",
         });
       }
+
+      // Criar resposta sem a senha
+      const userResponse = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        cpf: user.cpf,
+        birthDate: user.birthDate
+      };
+
       res.status(200).json(userResponse);
     } catch (error) {
       res.status(500).json({ error: error.message });

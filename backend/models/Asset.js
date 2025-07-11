@@ -256,6 +256,284 @@ class Asset {
       createdAt: this.createdAt,
     };
   }
+
+  // ==================== MÉTODOS DE PREÇOS (STOCKS) ====================
+
+  /**
+   * Buscar dados de preço de um ativo (da tabela stocks)
+   * @param {string} assetId - ID do ativo
+   * @returns {Object|null} Dados de preço ou null
+   */
+  static async getStockPrice(assetId) {
+    try {
+      const query = `
+        SELECT s.id, s.symbol, s.asset_id, s.current_price, s.daily_variation
+        FROM stocks s
+        WHERE s.asset_id = $1
+      `;
+      const result = await db.query(query, [assetId]);
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      return result.rows[0];
+    } catch (error) {
+      throw new Error(`Erro ao buscar preço do ativo: ${error.message}`);
+    }
+  }
+
+  /**
+   * Buscar ativo com seus dados de preço
+   * @param {string} assetId - ID do ativo
+   * @returns {Object|null} Ativo completo com preços
+   */
+  static async getAssetWithPrice(assetId) {
+    try {
+      const query = `
+        SELECT 
+          a.id, a.nome, a.tipo, a.categoria, a.created_at,
+          s.symbol, s.current_price, s.daily_variation
+        FROM assets a
+        LEFT JOIN stocks s ON a.id = s.asset_id
+        WHERE a.id = $1
+      `;
+      const result = await db.query(query, [assetId]);
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      const row = result.rows[0];
+      return {
+        ...Asset.fromDatabase(row).toJSON(),
+        symbol: row.symbol,
+        currentPrice: parseFloat(row.current_price || 0),
+        dailyVariation: parseFloat(row.daily_variation || 0),
+      };
+    } catch (error) {
+      throw new Error(`Erro ao buscar ativo com preço: ${error.message}`);
+    }
+  }
+
+  /**
+   * Buscar todas as ações com preços
+   * @returns {Array} Lista de ações com preços
+   */
+  static async getStocksWithPrices() {
+    try {
+      const query = `
+        SELECT 
+          a.id, a.nome, a.tipo, a.categoria, a.created_at,
+          s.symbol, s.current_price, s.daily_variation
+        FROM assets a
+        INNER JOIN stocks s ON a.id = s.asset_id
+        WHERE a.tipo = 'ação'
+        ORDER BY a.nome
+      `;
+      const result = await db.query(query);
+
+      return result.rows.map((row) => ({
+        ...Asset.fromDatabase(row).toJSON(),
+        symbol: row.symbol,
+        currentPrice: parseFloat(row.current_price),
+        dailyVariation: parseFloat(row.daily_variation),
+      }));
+    } catch (error) {
+      throw new Error(`Erro ao buscar ações com preços: ${error.message}`);
+    }
+  }
+
+  /**
+   * Buscar ativo por símbolo (symbol)
+   * @param {string} symbol - Símbolo do ativo (ex: BOIB3)
+   * @returns {Object|null} Ativo encontrado ou null
+   */
+  static async findBySymbol(symbol) {
+    try {
+      const query = `
+        SELECT 
+          a.id, a.nome, a.tipo, a.categoria, a.created_at,
+          s.symbol, s.current_price, s.daily_variation
+        FROM assets a
+        INNER JOIN stocks s ON a.id = s.asset_id
+        WHERE s.symbol = $1
+      `;
+      const result = await db.query(query, [symbol]);
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      const row = result.rows[0];
+      return {
+        ...Asset.fromDatabase(row).toJSON(),
+        symbol: row.symbol,
+        currentPrice: parseFloat(row.current_price),
+        dailyVariation: parseFloat(row.daily_variation),
+      };
+    } catch (error) {
+      throw new Error(`Erro ao buscar ativo por símbolo: ${error.message}`);
+    }
+  }
+
+  /**
+   * Calcular taxa de corretagem (1% para ações)
+   * @param {string} assetId - ID do ativo
+   * @param {number} quantity - Quantidade de ações
+   * @returns {Object} Cálculo da taxa
+   */
+  static async calculateBrokerageFee(assetId, quantity) {
+    try {
+      const asset = await Asset.getAssetWithPrice(assetId);
+
+      if (!asset) {
+        throw new Error("Ativo não encontrado");
+      }
+
+      if (asset.tipo !== "ação") {
+        return {
+          fee: 0,
+          totalValue: 0,
+          message: "Taxa de corretagem aplicável apenas para ações",
+        };
+      }
+
+      const totalValue = asset.currentPrice * quantity;
+      const fee = totalValue * 0.01; // 1% de taxa de corretagem
+
+      return {
+        asset: asset,
+        quantity: quantity,
+        unitPrice: asset.currentPrice,
+        totalValue: totalValue,
+        fee: fee,
+        totalWithFee: totalValue + fee,
+      };
+    } catch (error) {
+      throw new Error(`Erro ao calcular taxa de corretagem: ${error.message}`);
+    }
+  }
+
+  /**
+   * Atualizar preço de um ativo (na tabela stocks)
+   * @param {string} assetId - ID do ativo
+   * @param {number} newPrice - Novo preço
+   * @returns {Object} Resultado da atualização
+   */
+  static async updateStockPrice(assetId, newPrice) {
+    try {
+      const client = await db.connect();
+
+      try {
+        await client.query("BEGIN");
+
+        // Obter preço atual
+        const currentData = await Asset.getStockPrice(assetId);
+        if (!currentData) {
+          throw new Error("Ativo não encontrado na tabela de preços");
+        }
+
+        const oldPrice = parseFloat(currentData.current_price);
+        const variation = ((newPrice - oldPrice) / oldPrice) * 100;
+
+        // Atualizar preço e variação
+        const updateQuery = `
+          UPDATE stocks 
+          SET current_price = $1, daily_variation = $2
+          WHERE asset_id = $3
+          RETURNING *
+        `;
+        const result = await client.query(updateQuery, [
+          newPrice,
+          variation,
+          assetId,
+        ]);
+
+        await client.query("COMMIT");
+
+        return {
+          success: true,
+          oldPrice: oldPrice,
+          newPrice: newPrice,
+          variation: variation,
+          data: result.rows[0],
+        };
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      } finally {
+        client.release();
+      }
+    } catch (error) {
+      throw new Error(`Erro ao atualizar preço: ${error.message}`);
+    }
+  }
+
+  /**
+   * Simular variação de mercado (conforme regras de negócio)
+   * @returns {Object} Resultado da simulação
+   */
+  static async simulateMarketVariation() {
+    try {
+      const stocks = await Asset.getStocksWithPrices();
+      const updates = [];
+
+      for (const stock of stocks) {
+        const variation = Asset.generateMarketVariation();
+        const newPrice = stock.currentPrice * (1 + variation / 100);
+
+        // Garantir que o preço nunca seja negativo
+        const finalPrice = Math.max(newPrice, 0.01);
+
+        const updateResult = await Asset.updateStockPrice(stock.id, finalPrice);
+        updates.push({
+          symbol: stock.symbol,
+          nome: stock.nome,
+          oldPrice: updateResult.oldPrice,
+          newPrice: finalPrice,
+          variation: variation,
+        });
+      }
+
+      return {
+        success: true,
+        message: `${updates.length} ações atualizadas`,
+        updates: updates,
+      };
+    } catch (error) {
+      throw new Error(`Erro na simulação de mercado: ${error.message}`);
+    }
+  }
+
+  /**
+   * Gerar variação de mercado baseada nas regras de negócio
+   * @returns {number} Percentual de variação
+   */
+  static generateMarketVariation() {
+    const random = Math.random();
+    let variationRange;
+
+    // Distribuição de probabilidade conforme regras de negócio
+    if (random < 0.4) {
+      // 40% dos casos: 0.10% a 2%
+      variationRange = 0.1 + Math.random() * 1.9;
+    } else if (random < 0.7) {
+      // 30% dos casos: 2% a 3%
+      variationRange = 2 + Math.random();
+    } else if (random < 0.9) {
+      // 20% dos casos: 3% a 4%
+      variationRange = 3 + Math.random();
+    } else {
+      // 10% dos casos: 4% a 5%
+      variationRange = 4 + Math.random();
+    }
+
+    // Determinar direção (alta ou baixa)
+    const direction = Math.random() < 0.5 ? -1 : 1;
+
+    return variationRange * direction;
+  }
 }
 
 module.exports = Asset;

@@ -370,7 +370,8 @@ class AccountController {
       if (!assetSymbol || !quantity || !currentPrice) {
         return res.status(400).json({
           success: false,
-          message: "Símbolo do ativo, quantidade e preço atual são obrigatórios",
+          message:
+            "Símbolo do ativo, quantidade e preço atual são obrigatórios",
         });
       }
 
@@ -698,6 +699,124 @@ class AccountController {
         success: false,
         message: "Erro na verificação",
         error: error.message,
+      });
+    }
+  }
+  /**
+   * Buscar posição específica de um ativo
+   * GET /api/accounts/:accountId/position/:assetSymbol
+   */
+  static async getPosition(req, res) {
+    try {
+      const { accountId, assetSymbol } = req.params;
+
+      const account = await Account.findById(accountId);
+      if (!account) {
+        return res.status(404).json({
+          success: false,
+          message: "Conta não encontrada",
+        });
+      }
+
+      const position = await account.getPosition(assetSymbol);
+
+      if (!position) {
+        return res.status(404).json({
+          success: false,
+          message: "Posição não encontrada no portfólio",
+        });
+      }
+
+      const pnl = await account.getPositionPnL(assetSymbol);
+
+      res.json({
+        success: true,
+        data: {
+          position,
+          pnl,
+        },
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+  /**   * Buscar todos os ativos disponíveis
+   * GET /api/accounts/available-assets
+   */
+  static async getAvailableAssets(req, res) {
+    try {
+      const { type } = req.query; // 'ação' ou 'renda fixa'
+
+      let query;
+      let params = [];
+
+      if (type === "ação") {
+        query = `
+          SELECT 
+            a.id,
+            a.nome,
+            a.tipo,
+            a.categoria,
+            s.symbol,
+            s.current_price,
+            s.daily_variation
+          FROM assets a
+          JOIN stocks s ON s.asset_id = a.id
+          WHERE a.tipo = 'ação'
+          ORDER BY a.categoria, a.nome
+        `;
+      } else if (type === "renda fixa") {
+        query = `
+          SELECT 
+            a.id,
+            a.nome,
+            a.tipo,
+            a.categoria,
+            fi.id as symbol,
+            fi.name,
+            fi.rate,
+            fi.rate_type,
+            fi.maturity,
+            fi.minimum_investment
+          FROM assets a
+          JOIN fixed_income fi ON fi.asset_id = a.id
+          WHERE a.tipo = 'renda fixa'
+          ORDER BY fi.maturity, a.nome
+        `;
+      } else {
+        query = `
+          SELECT 
+            a.id,
+            a.nome,
+            a.tipo,
+            a.categoria,
+            COALESCE(s.symbol, fi.id) as symbol,
+            s.current_price,
+            s.daily_variation,
+            fi.rate,
+            fi.rate_type,
+            fi.maturity,
+            fi.minimum_investment
+          FROM assets a
+          LEFT JOIN stocks s ON s.asset_id = a.id
+          LEFT JOIN fixed_income fi ON fi.asset_id = a.id
+          ORDER BY a.tipo, a.categoria, a.nome
+        `;
+      }
+
+      const result = await db.query(query, params);
+
+      res.json({
+        success: true,
+        data: result.rows,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
       });
     }
   }

@@ -4,6 +4,11 @@ const AccountController = require('../controllers/AccountController');
 
 // =============== ROTAS DE CONSULTA ===============
 
+// Novas rotas para portfolio
+router.get('/:accountId/position/:assetSymbol', AccountController.getPosition);
+router.get('/assets', AccountController.getAvailableAssets);
+
+
 // Buscar conta por número (para transferências) - deve vir antes de /:userId
 router.get('/number/:accountNumber', AccountController.getAccountByNumber);
 

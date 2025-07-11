@@ -534,6 +534,308 @@ class Asset {
 
     return variationRange * direction;
   }
+
+  // ==================== MÉTODOS DE RENDA FIXA ====================
+
+  // Buscar detalhes de um produto de renda fixa por ID do asset
+  static async getFixedIncomeByAssetId(assetId) {
+    try {
+      const query = `
+        SELECT 
+          a.id as asset_id,
+          a.nome,
+          a.tipo,
+          a.categoria,
+          fi.id as fixed_income_id,
+          fi.name as product_name,
+          fi.rate,
+          fi.rate_type,
+          fi.maturity,
+          fi.minimum_investment,
+          a.created_at
+        FROM assets a
+        INNER JOIN fixed_income fi ON a.id = fi.asset_id
+        WHERE a.id = $1 AND a.tipo = 'renda fixa'
+      `;
+      
+      const result = await db.query(query, [assetId]);
+      return result.rows[0] || null;
+    } catch (error) {
+      console.error('Erro ao buscar renda fixa por asset ID:', error);
+      throw error;
+    }
+  }
+
+  // Buscar produto de renda fixa por ID específico
+  static async getFixedIncomeById(fixedIncomeId) {
+    try {
+      const query = `
+        SELECT 
+          a.id as asset_id,
+          a.nome,
+          a.tipo,
+          a.categoria,
+          fi.id as fixed_income_id,
+          fi.name as product_name,
+          fi.rate,
+          fi.rate_type,
+          fi.maturity,
+          fi.minimum_investment,
+          a.created_at
+        FROM assets a
+        INNER JOIN fixed_income fi ON a.id = fi.asset_id
+        WHERE fi.id = $1
+      `;
+      
+      const result = await db.query(query, [fixedIncomeId]);
+      return result.rows[0] || null;
+    } catch (error) {
+      console.error('Erro ao buscar renda fixa por ID:', error);
+      throw error;
+    }
+  }
+
+  // Listar todos os produtos de renda fixa
+  static async getAllFixedIncomes() {
+    try {
+      const query = `
+        SELECT 
+          a.id as asset_id,
+          a.nome,
+          a.tipo,
+          a.categoria,
+          fi.id as fixed_income_id,
+          fi.name as product_name,
+          fi.rate,
+          fi.rate_type,
+          fi.maturity,
+          fi.minimum_investment,
+          a.created_at
+        FROM assets a
+        INNER JOIN fixed_income fi ON a.id = fi.asset_id
+        WHERE a.tipo = 'renda fixa'
+        ORDER BY fi.rate DESC, fi.maturity ASC
+      `;
+      
+      const result = await db.query(query);
+      return result.rows;
+    } catch (error) {
+      console.error('Erro ao listar produtos de renda fixa:', error);
+      throw error;
+    }
+  }
+
+  // Buscar produtos de renda fixa por categoria
+  static async getFixedIncomesByCategory(categoria) {
+    try {
+      const query = `
+        SELECT 
+          a.id as asset_id,
+          a.nome,
+          a.tipo,
+          a.categoria,
+          fi.id as fixed_income_id,
+          fi.name as product_name,
+          fi.rate,
+          fi.rate_type,
+          fi.maturity,
+          fi.minimum_investment,
+          a.created_at
+        FROM assets a
+        INNER JOIN fixed_income fi ON a.id = fi.asset_id
+        WHERE a.tipo = 'renda fixa' AND a.categoria = $1
+        ORDER BY fi.rate DESC, fi.maturity ASC
+      `;
+      
+      const result = await db.query(query, [categoria]);
+      return result.rows;
+    } catch (error) {
+      console.error('Erro ao buscar renda fixa por categoria:', error);
+      throw error;
+    }
+  }
+
+  // Buscar produtos por tipo de taxa (pré ou pós-fixado)
+  static async getFixedIncomesByRateType(rateType) {
+    try {
+      const query = `
+        SELECT 
+          a.id as asset_id,
+          a.nome,
+          a.tipo,
+          a.categoria,
+          fi.id as fixed_income_id,
+          fi.name as product_name,
+          fi.rate,
+          fi.rate_type,
+          fi.maturity,
+          fi.minimum_investment,
+          a.created_at
+        FROM assets a
+        INNER JOIN fixed_income fi ON a.id = fi.asset_id
+        WHERE a.tipo = 'renda fixa' AND fi.rate_type = $1
+        ORDER BY fi.rate DESC, fi.maturity ASC
+      `;
+      
+      const result = await db.query(query, [rateType]);
+      return result.rows;
+    } catch (error) {
+      console.error('Erro ao buscar renda fixa por tipo de taxa:', error);
+      throw error;
+    }
+  }
+
+  // Buscar produtos por faixa de investimento mínimo
+  static async getFixedIncomesByInvestmentRange(minAmount, maxAmount = null) {
+    try {
+      let query = `
+        SELECT 
+          a.id as asset_id,
+          a.nome,
+          a.tipo,
+          a.categoria,
+          fi.id as fixed_income_id,
+          fi.name as product_name,
+          fi.rate,
+          fi.rate_type,
+          fi.maturity,
+          fi.minimum_investment,
+          a.created_at
+        FROM assets a
+        INNER JOIN fixed_income fi ON a.id = fi.asset_id
+        WHERE a.tipo = 'renda fixa' AND fi.minimum_investment >= $1
+      `;
+      
+      const params = [minAmount];
+      
+      if (maxAmount !== null) {
+        query += ' AND fi.minimum_investment <= $2';
+        params.push(maxAmount);
+      }
+      
+      query += ' ORDER BY fi.minimum_investment ASC, fi.rate DESC';
+      
+      const result = await db.query(query, params);
+      return result.rows;
+    } catch (error) {
+      console.error('Erro ao buscar renda fixa por faixa de investimento:', error);
+      throw error;
+    }
+  }
+
+  // Buscar produtos próximos ao vencimento
+  static async getFixedIncomesNearMaturity(daysToMaturity = 30) {
+    try {
+      const query = `
+        SELECT 
+          a.id as asset_id,
+          a.nome,
+          a.tipo,
+          a.categoria,
+          fi.id as fixed_income_id,
+          fi.name as product_name,
+          fi.rate,
+          fi.rate_type,
+          fi.maturity,
+          fi.minimum_investment,
+          (fi.maturity - CURRENT_DATE) as days_to_maturity,
+          a.created_at
+        FROM assets a
+        INNER JOIN fixed_income fi ON a.id = fi.asset_id
+        WHERE a.tipo = 'renda fixa' 
+        AND fi.maturity > CURRENT_DATE 
+        AND fi.maturity <= CURRENT_DATE + INTERVAL '$1 days'
+        ORDER BY fi.maturity ASC
+      `;
+      
+      const result = await db.query(query, [daysToMaturity]);
+      return result.rows;
+    } catch (error) {
+      console.error('Erro ao buscar produtos próximos ao vencimento:', error);
+      throw error;
+    }
+  }
+
+  // Calcular rendimento projetado para produtos pré-fixados
+  static calculateFixedIncomeReturn(principal, annualRate, maturityDate) {
+    try {
+      const today = new Date();
+      const maturity = new Date(maturityDate);
+      
+      // Calcular dias até o vencimento
+      const timeDiff = maturity.getTime() - today.getTime();
+      const daysToMaturity = Math.ceil(timeDiff / (1000 * 3600 * 24));
+      
+      if (daysToMaturity <= 0) {
+        return {
+          grossReturn: 0,
+          netReturn: 0,
+          totalGross: principal,
+          totalNet: principal,
+          daysToMaturity: 0,
+          taxRate: 0
+        };
+      }
+      
+      // Calcular rendimento bruto (juros compostos)
+      const dailyRate = Math.pow(1 + annualRate, 1/365) - 1;
+      const grossReturn = principal * (Math.pow(1 + dailyRate, daysToMaturity) - 1);
+      const totalGross = principal + grossReturn;
+      
+      // Calcular IR sobre renda fixa (regressivo)
+      let taxRate;
+      if (daysToMaturity <= 180) {
+        taxRate = 0.225; // 22,5%
+      } else if (daysToMaturity <= 360) {
+        taxRate = 0.20;  // 20%
+      } else if (daysToMaturity <= 720) {
+        taxRate = 0.175; // 17,5%
+      } else {
+        taxRate = 0.15;  // 15%
+      }
+      
+      const tax = grossReturn * taxRate;
+      const netReturn = grossReturn - tax;
+      const totalNet = principal + netReturn;
+      
+      return {
+        grossReturn: parseFloat(grossReturn.toFixed(2)),
+        netReturn: parseFloat(netReturn.toFixed(2)),
+        totalGross: parseFloat(totalGross.toFixed(2)),
+        totalNet: parseFloat(totalNet.toFixed(2)),
+        tax: parseFloat(tax.toFixed(2)),
+        taxRate: taxRate,
+        daysToMaturity: daysToMaturity,
+        annualRate: annualRate
+      };
+    } catch (error) {
+      console.error('Erro ao calcular rendimento da renda fixa:', error);
+      throw error;
+    }
+  }
+
+  // Validar se valor atende investimento mínimo
+  static async validateMinimumInvestment(fixedIncomeId, amount) {
+    try {
+      const product = await this.getFixedIncomeById(fixedIncomeId);
+      
+      if (!product) {
+        throw new Error('Produto de renda fixa não encontrado');
+      }
+      
+      const isValid = amount >= parseFloat(product.minimum_investment);
+      
+      return {
+        isValid,
+        minimumRequired: parseFloat(product.minimum_investment),
+        providedAmount: amount,
+        difference: isValid ? 0 : parseFloat(product.minimum_investment) - amount
+      };
+    } catch (error) {
+      console.error('Erro ao validar investimento mínimo:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = Asset;

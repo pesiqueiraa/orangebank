@@ -15,7 +15,7 @@ const ActionButtons = ({ onActionClick }) => {
       bgColorTo: 'to-green-100',
       textColor: 'text-green-600',
       shadowColor: 'rgba(52, 211, 153, 0.2)',
-      path: '/deposit'
+      path: '/deposito'
     },
     {
       name: 'Sacar',

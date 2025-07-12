@@ -8,10 +8,10 @@ import {
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import Deposito from './pages/Deposito';
 
 // Páginas de placeholder para as funcionalidades financeiras
 // Estas páginas seriam implementadas posteriormente
-const DepositPage = () => <div className="p-10"><h1 className="text-2xl">Página de Depósito</h1><p>Em desenvolvimento...</p></div>;
 const WithdrawPage = () => <div className="p-10"><h1 className="text-2xl">Página de Saque</h1><p>Em desenvolvimento...</p></div>;
 const TransferPage = () => <div className="p-10"><h1 className="text-2xl">Página de Transferência</h1><p>Em desenvolvimento...</p></div>;
 const InvestPage = () => <div className="p-10"><h1 className="text-2xl">Página de Investimentos</h1><p>Em desenvolvimento...</p></div>;
@@ -72,9 +72,9 @@ const App = () => {
             <Dashboard />
         } />
         
-        <Route path="/deposit" element={
+        <Route path="/deposito" element={
           <ProtectedRoute>
-            <DepositPage />
+            <Deposito />
           </ProtectedRoute>
         } />
         

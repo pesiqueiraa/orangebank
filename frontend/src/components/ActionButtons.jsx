@@ -24,7 +24,7 @@ const ActionButtons = ({ onActionClick }) => {
       bgColorTo: 'to-red-100',
       textColor: 'text-red-600',
       shadowColor: 'rgba(248, 113, 113, 0.2)',
-      path: '/withdraw'
+      path: '/saque'  // Alterado de '/withdraw' para '/saque'
     },
     {
       name: 'Transferir',

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ShieldCheck, CreditCard } from 'lucide-react';
 
 // Simple toast notification function (replacing the toast library)
 const showToast = (message, type = 'info') => {
@@ -8,25 +8,56 @@ const showToast = (message, type = 'info') => {
   // In a real app, you'd implement a proper toast notification here
 };
 
+// CPF formatter helper
+const formatCPF = (value) => {
+  if (!value) return '';
+  
+  // Remove all non-digits
+  const cpf = value.replace(/\D/g, '');
+  
+  // Apply the mask: 000.000.000-00
+  return cpf
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+    .substring(0, 14);
+};
+
 const LoginForm = () => {
+  const [loginMethod, setLoginMethod] = useState('email'); // 'email' ou 'cpf'
   const [email, setEmail] = useState('');
+  const [cpf, setCpf] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
 
+  const handleCPFChange = (e) => {
+    setCpf(formatCPF(e.target.value));
+  };
+
+  const toggleLoginMethod = () => {
+    setLoginMethod(loginMethod === 'email' ? 'cpf' : 'email');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const success = await login(email, password);
+      // Verificar qual método de login está sendo utilizado
+      const identifier = loginMethod === 'email' ? email : cpf;
+      const success = await login(identifier, password, loginMethod);
+      
       if (success) {
         showToast("Login realizado com sucesso! Bem-vindo de volta ao OrangeBank.", "success");
         navigate('/dashboard');
       } else {
-        showToast("Email ou senha incorretos.", "error");
+        const errorMessage = loginMethod === 'email' 
+          ? "Email ou senha incorretos." 
+          : "CPF ou senha incorretos.";
+        showToast(errorMessage, "error");
       }
     } catch (error) {
       showToast("Ocorreu um erro inesperado. Tente novamente.", "error");
@@ -44,22 +75,71 @@ const LoginForm = () => {
         </p>
       </div>
       <div className="px-8 py-6">
+        {/* Seletor de método de login */}
+        <div className="flex bg-gray-100 rounded-lg p-1 mb-5">
+          <button
+            onClick={() => setLoginMethod('email')}
+            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+              loginMethod === 'email'
+                ? 'bg-white text-orange-500 shadow-sm'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+            type="button"
+          >
+            Email
+          </button>
+          <button
+            onClick={() => setLoginMethod('cpf')}
+            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+              loginMethod === 'cpf'
+                ? 'bg-white text-orange-500 shadow-sm'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+            type="button"
+          >
+            CPF
+          </button>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Campo de email ou CPF */}
           <div className="space-y-2">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+            <label htmlFor={loginMethod} className="block text-sm font-medium text-gray-700">
+              {loginMethod === 'email' ? 'Email' : 'CPF'}
+            </label>
             <div className="relative group">
               <div className="absolute left-3 top-3 text-gray-400 group-focus-within:text-orange-500 transition-colors">
-                <Mail className="h-5 w-5" />
+                {loginMethod === 'email' ? (
+                  <Mail className="h-5 w-5" />
+                ) : (
+                  <CreditCard className="h-5 w-5" />
+                )}
               </div>
-              <input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 pl-11 placeholder-gray-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
-                required
-              />
+              
+              {loginMethod === 'email' ? (
+                <input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 pl-11 placeholder-gray-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
+                  required
+                  autoFocus={loginMethod === 'email'}
+                />
+              ) : (
+                <input
+                  id="cpf"
+                  type="text"
+                  placeholder="000.000.000-00"
+                  value={cpf}
+                  onChange={handleCPFChange}
+                  maxLength={14}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 pl-11 placeholder-gray-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
+                  required
+                  autoFocus={loginMethod === 'cpf'}
+                />
+              )}
             </div>
           </div>
 

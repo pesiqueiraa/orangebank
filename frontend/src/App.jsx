@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Deposito from './pages/Deposito';
+import Saque from './pages/Saque';
 
 // Páginas de placeholder para as funcionalidades financeiras
 // Estas páginas seriam implementadas posteriormente
@@ -75,6 +76,12 @@ const App = () => {
         <Route path="/deposito" element={
           <ProtectedRoute>
             <Deposito />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/saque" element={
+          <ProtectedRoute>
+            <Saque />
           </ProtectedRoute>
         } />
         

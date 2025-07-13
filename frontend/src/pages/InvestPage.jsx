@@ -9,6 +9,7 @@ import AssetList from '../components/AssetList';
 import AssetPurchaseForm from '../components/AssetPurchaseForm';
 import AccountBalanceCard from '../components/AccountBalanceCard';
 import ToastNotification from '../components/ToastNotification';
+import SearchAssets from '../components/SearchAssets';
 
 // Definir a URL base da API
 const API_URL = 'http://localhost:3000/api';
@@ -33,12 +34,14 @@ const InvestPage = () => {
   // Estados
   const [contaInvestimento, setContaInvestimento] = useState(null);
   const [assets, setAssets] = useState([]);
+  const [filteredAssets, setFilteredAssets] = useState([]);
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingAssets, setLoadingAssets] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('success');
+  const [searchTerm, setSearchTerm] = useState('');
   
   const navigate = useNavigate();
 
@@ -69,6 +72,7 @@ const InvestPage = () => {
         
         if (assetsResponse.data.success) {
           setAssets(assetsResponse.data.data);
+          setFilteredAssets(assetsResponse.data.data); // Inicializa os ativos filtrados
         } else {
           throw new Error("Erro ao buscar ativos disponíveis");
         }
@@ -83,6 +87,29 @@ const InvestPage = () => {
 
     fetchData();
   }, [navigate]);
+
+  // Filtrar ativos com base no termo de busca
+  useEffect(() => {
+    if (assets.length === 0) {
+      setFilteredAssets([]);
+      return;
+    }
+    
+    if (!searchTerm.trim()) {
+      setFilteredAssets(assets);
+      return;
+    }
+    
+    const term = searchTerm.toLowerCase();
+    const filtered = assets.filter(asset => 
+      asset.name?.toLowerCase().includes(term) || 
+      asset.symbol?.toLowerCase().includes(term) || 
+      asset.category?.toLowerCase().includes(term) ||
+      asset.tipo?.toLowerCase().includes(term)
+    );
+    
+    setFilteredAssets(filtered);
+  }, [assets, searchTerm]);
 
   // Função para exibir notificações toast
   const displayToast = (message, type = 'success') => {
@@ -179,6 +206,11 @@ const InvestPage = () => {
     }
   };
 
+  // Função para atualizar o termo de busca
+  const handleSearch = (term) => {
+    setSearchTerm(term);
+  };
+
   return (
     <motion.div 
       className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 py-8 px-4 sm:px-6 lg:px-8"
@@ -222,11 +254,14 @@ const InvestPage = () => {
                 <p className="text-gray-500">Carregando ativos disponíveis...</p>
               </div>
             ) : (
-              <AssetList 
-                assets={assets} 
-                onSelectAsset={handleSelectAsset}
-                selectedAssetId={selectedAsset?.id}
-              />
+              <>
+                <SearchAssets onSearch={handleSearch} />
+                <AssetList 
+                  assets={filteredAssets} 
+                  onSelectAsset={handleSelectAsset}
+                  selectedAssetId={selectedAsset?.id}
+                />
+              </>
             )}
           </div>
           

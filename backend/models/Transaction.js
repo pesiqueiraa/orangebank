@@ -168,9 +168,13 @@ class Transaction {
           t.taxa,
           t.created_at,
           tf.to_account_id,
-          tf.status as transfer_status
+          tf.status as transfer_status,
+          a_dest.type as to_account_type,
+          u_dest.name as to_user_name
         FROM transactions t
         LEFT JOIN transfers tf ON t.id = tf.transaction_ref
+        LEFT JOIN accounts a_dest ON tf.to_account_id = a_dest.id
+        LEFT JOIN users u_dest ON a_dest.user_id = u_dest.id
         WHERE t.account_id = $1
         ORDER BY t.created_at DESC
         LIMIT $2 OFFSET $3
@@ -179,18 +183,18 @@ class Transaction {
       const result = await db.query(query, [accountId, limit, offset]);
       
       return result.rows.map(row => ({
-        ...new Transaction(
-          row.id,
-          row.transaction_id,
-          row.user_id,
-          row.account_id,
-          row.tipo,
-          parseFloat(row.valor),
-          parseFloat(row.taxa),
-          row.created_at
-        ),
+        id: row.id,
+        transaction_id: row.transaction_id,
+        user_id: row.user_id,
+        account_id: row.account_id,
+        tipo: row.tipo,
+        valor: parseFloat(row.valor),
+        taxa: parseFloat(row.taxa),
+        created_at: row.created_at,
         toAccountId: row.to_account_id,
-        transferStatus: row.transfer_status
+        transferStatus: row.transfer_status,
+        toAccountType: row.to_account_type,
+        toUserName: row.to_user_name
       }));
     } catch (error) {
       throw new Error(`Erro ao buscar transações por conta: ${error.message}`);

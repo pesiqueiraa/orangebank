@@ -256,6 +256,47 @@ class UserController {
       });
     }
   }
+
+  /**
+   * Obter saldo de OrangeCoins do usuário
+   * GET /api/users/:userId/orangecoins
+   */
+  static async getOrangeCoins(req, res) {
+    try {
+      const { userId } = req.params;
+      
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: "ID do usuário é obrigatório"
+        });
+      }
+
+      // Usar o modelo para buscar os OrangeCoins
+      const orangeCoins = await User.getOrangeCoins(userId);
+      
+      if (orangeCoins === null) {
+        return res.status(404).json({
+          success: false,
+          message: "Usuário não encontrado"
+        });
+      }
+      
+      return res.status(200).json({
+        success: true,
+        data: {
+          orangeCoins: orangeCoins
+        }
+      });
+    } catch (error) {
+      console.error(`Erro ao obter saldo de OrangeCoins: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        message: "Erro ao obter saldo de OrangeCoins",
+        error: error.message
+      });
+    }
+  }
 }
 
 module.exports = UserController;

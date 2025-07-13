@@ -9,16 +9,20 @@ import {
   AlertCircle, 
   Info
 } from 'lucide-react';
+import axios from 'axios';
 import ResumoContas from '../components/ResumoContas';
 import ActionButtons from '../components/ActionButtons';
 import HistoricoTransacoes from '../components/HistoricoTransacoes';
 import Grafico from '../components/Grafico';
+
+const API_URL = 'http://localhost:3000/api';
 
 const Dashboard = () => {
   // Estados para armazenar os dados do dashboard
   const [user, setUser] = useState(null);
   const [accounts, setAccounts] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const [performance, setPerformance] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -27,48 +31,112 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Simula o carregamento de dados da API
-    const fetchDashboardData = async () => {
-      try {
-        // Dados simulados para demonstração
-        const userData = {
-          id: 'uuid-123',
-          name: 'João Silva',
-          email: 'joao.silva@email.com'
-        };
-        
-        const accountsData = [
-          { id: 'acc-1', type: 'corrente', balance: 3250.75 },
-          { id: 'acc-2', type: 'investimento', balance: 12750.42 }
-        ];
-        
-        const transactionsData = [
-          { id: 'tx-1', type: 'deposito', amount: 1500.00, date: '2025-07-10T14:30:00Z', description: 'Depósito em dinheiro' },
-          { id: 'tx-2', type: 'transferencia', amount: -350.00, date: '2025-07-09T10:15:00Z', description: 'Transferência para Maria' },
-          { id: 'tx-3', type: 'pagamento', amount: -89.90, date: '2025-07-08T18:22:00Z', description: 'Pagamento de conta de luz' },
-          { id: 'tx-4', type: 'investimento', amount: -1000.00, date: '2025-07-07T09:45:00Z', description: 'Compra de ações ENER3' },
-          { id: 'tx-5', type: 'saque', amount: -200.00, date: '2025-07-06T16:30:00Z', description: 'Saque no caixa eletrônico' },
-        ];
-        
-        // Simulação de um atraso de rede
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        setUser(userData);
-        setAccounts(accountsData);
-        setTransactions(transactionsData);
-        
-        // Exibe toast de boas-vindas
-        displayToast('Bem-vindo de volta, João!', 'success');
-      } catch (error) {
-        console.error("Erro ao carregar dados do dashboard:", error);
-        displayToast('Erro ao carregar dados', 'error');
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    // Verificar se o usuário está autenticado
+    const storedUser = localStorage.getItem('user');
+    if (!storedUser) {
+      navigate('/login');
+      return;
+    }
 
+    // Carregar dados do dashboard
     fetchDashboardData();
-  }, []);
+  }, [navigate]);
+
+  const fetchDashboardData = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Obter dados do usuário do localStorage
+      const storedUser = JSON.parse(localStorage.getItem('user'));
+      setUser(storedUser);
+      
+      // Obter contas do usuário
+      const accountsResponse = await axios.get(`${API_URL}/accounts/${storedUser.id}`);
+      if (accountsResponse.data.success) {
+        setAccounts(accountsResponse.data.data);
+        
+        // Encontrar conta corrente para buscar histórico de transações
+        const currentAccount = accountsResponse.data.data.find(acc => acc.type === 'corrente');
+        if (currentAccount) {
+          // Buscar histórico de transações da conta corrente
+          const transactionsResponse = await axios.get(
+            `${API_URL}/accounts/${currentAccount.id}/history?limit=10`
+          );
+          
+          if (transactionsResponse.data.success) {
+            // Formatar transações para o formato esperado pelo componente
+            const formattedTransactions = transactionsResponse.data.data.map(tx => ({
+              id: tx.id,
+              type: mapTransactionType(tx.tipo),
+              amount: tx.tipo.includes('saque') || tx.tipo.includes('transfer') ? -parseFloat(tx.valor) : parseFloat(tx.valor),
+              date: tx.created_at,
+              description: getTransactionDescription(tx)
+            }));
+            
+            setTransactions(formattedTransactions);
+          }
+          
+          // Buscar dados de performance para investimentos
+          const investAccount = accountsResponse.data.data.find(acc => acc.type === 'investimento');
+          if (investAccount) {
+            const performanceResponse = await axios.get(
+              `${API_URL}/accounts/${investAccount.id}/performance`
+            );
+            
+            if (performanceResponse.data.success) {
+              setPerformance(performanceResponse.data.data);
+            }
+          }
+        }
+      }
+      
+      // Exibe toast de boas-vindas
+      displayToast(`Bem-vindo de volta, ${storedUser.name.split(' ')[0]}!`, 'success');
+    } catch (error) {
+      console.error("Erro ao carregar dados do dashboard:", error);
+      displayToast('Erro ao carregar dados', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Funções auxiliares para formatação de dados
+  const mapTransactionType = (apiType) => {
+    const typeMap = {
+      'depósito': 'deposito',
+      'saque': 'saque',
+      'transferência_interna': 'transferencia',
+      'transferência_externa': 'transferencia',
+      'recebimento_interna': 'deposito',
+      'recebimento_externo': 'deposito',
+      'compra_ativo': 'investimento',
+      'venda_ativo': 'investimento',
+    };
+    return typeMap[apiType] || apiType;
+  };
+  
+  const getTransactionDescription = (transaction) => {
+    switch (transaction.tipo) {
+      case 'depósito':
+        return 'Depósito em conta';
+      case 'saque':
+        return 'Saque da conta';
+      case 'transferência_interna':
+        return 'Transferência entre contas';
+      case 'transferência_externa':
+        return 'Transferência enviada';
+      case 'recebimento_interna':
+        return 'Transferência recebida';
+      case 'recebimento_externo':
+        return 'Transferência recebida';
+      case 'compra_ativo':
+        return 'Compra de investimento';
+      case 'venda_ativo':
+        return 'Venda de investimento';
+      default:
+        return transaction.tipo;
+    }
+  };
 
   // Função para exibir notificações toast
   const displayToast = (message, type = 'success') => {
@@ -86,15 +154,103 @@ const Dashboard = () => {
   const handleLogout = () => {
     displayToast('Saindo...', 'info');
     setTimeout(() => {
-      localStorage.removeItem('isAuthenticated');
+      localStorage.removeItem('user');
       navigate('/login');
     }, 1000);
+  };
+
+  // Função para realizar um depósito
+  const handleDeposit = async (amount, accountId) => {
+    try {
+      setIsLoading(true);
+      
+      const response = await axios.post(`${API_URL}/accounts/${accountId}/deposit`, {
+        amount: parseFloat(amount)
+      });
+      
+      if (response.data.success) {
+        displayToast('Depósito realizado com sucesso!', 'success');
+        fetchDashboardData(); // Recarregar dados
+      }
+    } catch (error) {
+      console.error("Erro ao realizar depósito:", error);
+      displayToast(error.response?.data?.message || 'Erro ao processar depósito', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Função para realizar um saque
+  const handleWithdraw = async (amount, accountId) => {
+    try {
+      setIsLoading(true);
+      
+      const response = await axios.post(`${API_URL}/accounts/${accountId}/withdraw`, {
+        amount: parseFloat(amount)
+      });
+      
+      if (response.data.success) {
+        displayToast('Saque realizado com sucesso!', 'success');
+        fetchDashboardData(); // Recarregar dados
+      }
+    } catch (error) {
+      console.error("Erro ao realizar saque:", error);
+      displayToast(error.response?.data?.message || 'Erro ao processar saque', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Função para realizar uma transferência
+  const handleTransfer = async (fromAccountId, toAccountId, amount) => {
+    try {
+      setIsLoading(true);
+      
+      const response = await axios.post(`${API_URL}/accounts/${fromAccountId}/transfer`, {
+        toAccountId,
+        amount: parseFloat(amount)
+      });
+      
+      if (response.data.success) {
+        displayToast('Transferência realizada com sucesso!', 'success');
+        fetchDashboardData(); // Recarregar dados
+      }
+    } catch (error) {
+      console.error("Erro ao realizar transferência:", error);
+      displayToast(error.response?.data?.message || 'Erro ao processar transferência', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Função para alterar o período do gráfico
   const handlePeriodChange = (period) => {
     setChartPeriod(period);
     displayToast(`Período alterado para: ${period}`, 'info');
+  };
+
+  // Função para lidar com o clique em ações
+  const handleActionClick = (action) => {
+    // Exemplo de como lidar com cliques nas ações
+    switch (action) {
+      case 'deposit':
+        const currentAccount = accounts.find(acc => acc.type === 'corrente');
+        if (currentAccount) {
+          handleDeposit(100, currentAccount.id); // Exemplo com valor fixo
+        }
+        break;
+      case 'withdraw':
+        displayToast('Função de saque em desenvolvimento', 'info');
+        break;
+      case 'transfer':
+        displayToast('Função de transferência em desenvolvimento', 'info');
+        break;
+      case 'invest':
+        displayToast('Função de investimento em desenvolvimento', 'info');
+        break;
+      default:
+        displayToast(`Indo para: ${action}`, 'info');
+    }
   };
 
   // Tela de carregamento com animação
@@ -171,7 +327,7 @@ const Dashboard = () => {
               <div className="w-8 h-8 bg-gradient-to-br from-orange-100 to-orange-200 rounded-full flex items-center justify-center shadow-inner">
                 <User className="h-4 w-4 text-orange-600" />
               </div>
-              <span className="text-sm font-medium">{user.name}</span>
+              <span className="text-sm font-medium">{user?.name}</span>
             </motion.div>
             
             <motion.button 
@@ -233,7 +389,7 @@ const Dashboard = () => {
               />
             </div>
           </div>
-          <Grafico period={chartPeriod} />
+          <Grafico period={chartPeriod} performanceData={performance} />
         </motion.div>
         
         {/* Botões de ação */}
@@ -242,7 +398,7 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          <ActionButtons onActionClick={(action) => displayToast(`Indo para: ${action}`, 'info')} />
+          <ActionButtons onActionClick={handleActionClick} />
         </motion.div>
         
         {/* Histórico de transações */}

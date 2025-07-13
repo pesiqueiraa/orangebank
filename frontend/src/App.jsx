@@ -10,6 +10,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Deposito from './pages/Deposito';
 import Saque from './pages/Saque';
+import Transferencia from './pages/Transferencia';
 
 // Páginas de placeholder para as funcionalidades financeiras
 // Estas páginas seriam implementadas posteriormente
@@ -100,6 +101,12 @@ const App = () => {
         <Route path="/invest" element={
           <ProtectedRoute>
             <InvestPage />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/transferencia" element={
+          <ProtectedRoute>
+            <Transferencia />
           </ProtectedRoute>
         } />
         

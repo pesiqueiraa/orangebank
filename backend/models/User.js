@@ -282,6 +282,67 @@ class User {
       throw new Error("Erro ao buscar usuários: " + error.message);
     }
   }
+
+  /**
+   * Obter saldo de OrangeCoins de um usuário pelo ID
+   * @param {string} userId - ID do usuário
+   * @returns {Promise<number>} Quantidade de OrangeCoins ou null se usuário não encontrado
+   */
+  static async getOrangeCoins(userId) {
+    try {
+      const query = "SELECT orangecoin FROM users WHERE id = $1";
+      const result = await db.query(query, [userId]);
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      return result.rows[0].orangecoin;
+    } catch (error) {
+      console.error(`Erro ao buscar OrangeCoins: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Adiciona OrangeCoins à conta do usuário
+   * @param {string} userId - ID do usuário
+   * @param {number} amount - Quantidade de OrangeCoins a adicionar
+   * @param {string} action - Ação realizada que gerou as moedas
+   * @returns {Object} Resultado da operação
+   */
+  static async addOrangeCoins(userId, amount, action) {
+    try {
+      // Atualizar a quantidade de OrangeCoins do usuário
+      const query = `
+        UPDATE users 
+        SET orangecoin = orangecoin + $1, updated_at = NOW() 
+        WHERE id = $2
+        RETURNING orangecoin
+      `;
+      const result = await db.query(query, [amount, userId]);
+
+      if (result.rows.length === 0) {
+        throw new Error("Usuário não encontrado");
+      }
+
+      const newCoinsTotal = result.rows[0].orangecoin;
+
+      // Opcional: Registrar a atividade de ganho de moedas em uma tabela de log
+      console.log(
+        `[OrangeCoin] Usuário ${userId} ganhou ${amount} moedas por: ${action}. Total: ${newCoinsTotal}`
+      );
+
+      return {
+        success: true,
+        message: `${amount} OrangeCoins adicionadas com sucesso!`,
+        newTotal: newCoinsTotal,
+      };
+    } catch (error) {
+      console.error(`Erro ao adicionar OrangeCoins: ${error.message}`);
+      throw error;
+    }
+  }
 }
 
 module.exports = User;

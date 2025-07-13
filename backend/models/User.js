@@ -1,7 +1,7 @@
 const db = require("../config/database");
 
 class User {
-  // Define o construtor da classe User
+  // Construtor existente
   constructor(id, name, email, cpf, birthDate, password, createdAt, updatedAt) {
     this.id = id;
     this.name = name;
@@ -12,10 +12,16 @@ class User {
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
   }
+
   // Método para criar um novo usuário
   static async create({ name, email, cpf, birthDate, password }) {
+    const client = await db.getClient();
+
     try {
-      const result = await db.query(
+      await client.query("BEGIN");
+
+      // Criar o usuário
+      const userResult = await client.query(
         `
         INSERT INTO users (name, email, cpf, birth_date, password, created_at, updated_at)
         VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
@@ -24,9 +30,36 @@ class User {
         [name, email, cpf, birthDate, password]
       );
 
-      const user = result.rows[0];
+      if (userResult.rows.length === 0) {
+        throw new Error("Falha ao criar usuário");
+      }
 
-      return new User(
+      const user = userResult.rows[0];
+
+      // Criar conta corrente para o usuário
+      const currentAccountResult = await client.query(
+        `
+        INSERT INTO accounts (user_id, type, balance, created_at, updated_at)
+        VALUES ($1, 'corrente', 0, NOW(), NOW())
+        RETURNING id, balance
+        `,
+        [user.id]
+      );
+
+      // Criar conta de investimento para o usuário
+      const investmentAccountResult = await client.query(
+        `
+        INSERT INTO accounts (user_id, type, balance, created_at, updated_at)
+        VALUES ($1, 'investimento', 0, NOW(), NOW())
+        RETURNING id, balance
+        `,
+        [user.id]
+      );
+
+      await client.query("COMMIT");
+
+      // Criar objeto de usuário com as contas incluídas
+      const newUser = new User(
         user.id,
         user.name,
         user.email,
@@ -36,10 +69,40 @@ class User {
         user.created_at,
         user.updated_at
       );
+
+      // Adicionar informações das contas ao objeto de usuário
+      newUser.accounts = {
+        corrente: {
+          id: currentAccountResult.rows[0].id,
+          balance: parseFloat(currentAccountResult.rows[0].balance),
+        },
+        investimento: {
+          id: investmentAccountResult.rows[0].id,
+          balance: parseFloat(investmentAccountResult.rows[0].balance),
+        },
+      };
+
+      return newUser;
     } catch (error) {
+      await client.query("ROLLBACK");
+
+      // Verificar erro de violação de unicidade (email ou CPF duplicado)
+      if (error.code === "23505") {
+        // PostgreSQL unique violation code
+        if (error.detail.includes("email")) {
+          throw new Error("Email já cadastrado");
+        }
+        if (error.detail.includes("cpf")) {
+          throw new Error("CPF já cadastrado");
+        }
+      }
+
       throw new Error("Erro ao criar usuário: " + error.message);
+    } finally {
+      client.release();
     }
   }
+
   // Método para encontrar um usuário pelo email ou CPF
   static async findByEmailOrCpf(login) {
     try {

@@ -6,9 +6,32 @@ class UserController {
     const { name, email, cpf, birthDate, password } = req.body;
 
     try {
+      // O método User.create agora cria tanto o usuário quanto suas contas
       const user = await User.create({ name, email, cpf, birthDate, password });
-      res.status(201).json(user);
+
+      // Preparar resposta sem incluir a senha
+      const userResponse = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        cpf: user.cpf,
+        birthDate: user.birthDate,
+        accounts: user.accounts, // Incluir as contas criadas na resposta
+      };
+
+      res.status(201).json({
+        message: "Usuário e contas criados com sucesso",
+        user: userResponse,
+      });
     } catch (error) {
+      // Tratar erros específicos de validação
+      if (
+        error.message.includes("Email já cadastrado") ||
+        error.message.includes("CPF já cadastrado")
+      ) {
+        return res.status(400).json({ error: error.message });
+      }
+
       res.status(500).json({ error: error.message });
     }
   }
@@ -26,7 +49,7 @@ class UserController {
       }
 
       // Verificar se o login é um email (contém @) ou CPF
-      const isEmail = login.includes('@');
+      const isEmail = login.includes("@");
       let user;
 
       if (isEmail) {
@@ -54,7 +77,7 @@ class UserController {
         name: user.name,
         email: user.email,
         cpf: user.cpf,
-        birthDate: user.birthDate
+        birthDate: user.birthDate,
       };
 
       res.status(200).json({
@@ -99,7 +122,7 @@ class UserController {
         name: user.name,
         email: user.email,
         cpf: user.cpf,
-        birthDate: user.birthDate
+        birthDate: user.birthDate,
       };
 
       res.status(200).json({
@@ -144,7 +167,7 @@ class UserController {
         name: user.name,
         email: user.email,
         cpf: user.cpf,
-        birthDate: user.birthDate
+        birthDate: user.birthDate,
       };
 
       res.status(200).json({
@@ -182,7 +205,7 @@ class UserController {
         name: user.name,
         email: user.email,
         cpf: user.cpf,
-        birthDate: user.birthDate
+        birthDate: user.birthDate,
       };
 
       res.status(200).json(userResponse);

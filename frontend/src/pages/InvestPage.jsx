@@ -279,10 +279,6 @@ const InvestPage = () => {
                 <p className="text-sm text-gray-600 mb-4">
                   {selectedAsset.description || `${selectedAsset.name} (${selectedAsset.symbol}) é um ativo negociado na bolsa de valores.`}
                 </p>
-                <div className="text-xs text-gray-500 flex items-center">
-                  <Info className="h-3 w-3 mr-1" />
-                  Os preços são atualizados em tempo real
-                </div>
               </div>
             )}
           </div>

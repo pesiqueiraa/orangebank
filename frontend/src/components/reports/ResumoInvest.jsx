@@ -3,6 +3,7 @@ import axios from "axios";
 import { Download, Briefcase, TrendingUp, TrendingDown, AlertCircle } from "lucide-react";
 import GraficoRelatorio from "./GraficoRelatorio";
 import { Link } from "react-router-dom";
+import { jsPDF } from "jspdf";
 
 // API URL
 const API_URL = "http://localhost:3000/api";
@@ -167,7 +168,133 @@ const ResumoInvest = () => {
   };
 
   const handleExportPDF = () => {
-    alert("Exportação para PDF em implementação");
+    if (!summaryData) return;
+    
+    const doc = new jsPDF();
+    
+    // Adicionar cabeçalho
+    doc.setFontSize(18);
+    doc.text('Resumo de Investimentos', 14, 15);
+    
+    // Adicionar informações da conta
+    doc.setFontSize(11);
+    if (investAccount) {
+      doc.text(`Conta: ${investAccount.type || investAccount.tipo || "Investimento"} ${investAccount.id.substring(0, 8)}`, 14, 25);
+    }
+    doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 14, 30);
+    
+    // Adicionar resumo
+    doc.setFontSize(14);
+    doc.text('Resumo da Carteira', 14, 40);
+    
+    doc.setFontSize(11);
+    doc.text(`Total Investido: ${new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(summaryData.totalInvested || 0)}`, 14, 50);
+    
+    doc.text(`Valor Atual: ${new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(summaryData.currentValue || 0)}`, 14, 55);
+    
+    doc.text(`Lucro/Prejuízo: ${new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(summaryData.profitLoss || 0)}`, 14, 60);
+    
+    doc.text(`Rentabilidade: ${(summaryData.profitLossPercentage || 0).toFixed(2)}%`, 14, 65);
+    
+    // Adicionar tabela de ativos manualmente
+    doc.setFontSize(14);
+    doc.text('Carteira de Ativos', 14, 80);
+    
+    let y = 90;
+    doc.setFontSize(10);
+    doc.text('Ativo', 14, y);
+    doc.text('Qtde', 60, y);
+    doc.text('Preço Médio', 80, y);
+    doc.text('Valor Investido', 120, y);
+    doc.text('Valor Atual', 160, y);
+    doc.text('Rendimento', 190, y);
+    y += 5;
+    doc.line(14, y, 196, y);
+    y += 10;
+    
+    // Formatar valores para moeda
+    const formatCurrency = (value) => {
+      return new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }).format(value);
+    };
+    
+    // Adicionar dados da tabela
+    (summaryData.assets || []).forEach((asset, index) => {
+      if (index > 15) return; // Limitar para não ultrapassar a página
+      
+      // Garantir que os valores numéricos sejam números válidos
+      const quantity = parseFloat(asset.quantity) || 0;
+      const averagePrice = parseFloat(asset.averagePrice) || 0;
+      const currentPrice = parseFloat(asset.currentPrice) || averagePrice;
+      const invested = quantity * averagePrice;
+      const current = quantity * currentPrice;
+      const profitLoss = current - invested;
+      const profitLossPercentage = invested > 0 ? (profitLoss / invested) * 100 : 0;
+      
+      doc.text(asset.symbol, 14, y);
+      doc.text(quantity.toLocaleString('pt-BR'), 60, y);
+      doc.text(formatCurrency(averagePrice), 80, y);
+      doc.text(formatCurrency(invested), 120, y);
+      doc.text(formatCurrency(current), 160, y);
+      doc.text(`${formatCurrency(profitLoss)} (${profitLossPercentage.toFixed(2)}%)`, 190, y);
+      y += 10;
+      
+      if (y > 270) {
+        doc.addPage();
+        // Adicionar cabeçalho da tabela na nova página
+        y = 20;
+        doc.setFontSize(10);
+        doc.text('Ativo', 14, y);
+        doc.text('Qtde', 60, y);
+        doc.text('Preço Médio', 80, y);
+        doc.text('Valor Investido', 120, y);
+        doc.text('Valor Atual', 160, y);
+        doc.text('Rendimento', 190, y);
+        y += 5;
+        doc.line(14, y, 196, y);
+        y += 10;
+      }
+    });
+    
+    // Se não houver ativos
+    if (!summaryData.assets || summaryData.assets.length === 0) {
+      doc.text("Nenhum investimento encontrado na sua carteira.", 14, y);
+    }
+    
+    // Adicionar rodapé
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.text(
+        `Gerado em ${new Date().toLocaleDateString('pt-BR')} - Página ${i} de ${pageCount}`,
+        doc.internal.pageSize.getWidth() / 2, 
+        doc.internal.pageSize.getHeight() - 10, 
+        { align: 'center' }
+      );
+    }
+    
+    // Adicionar informações legais
+    doc.setPage(pageCount);
+    doc.setFontSize(7);
+    doc.text(
+      'Este documento é apenas um resumo informativo e não substitui os documentos oficiais de sua corretora.',
+      14,
+      doc.internal.pageSize.getHeight() - 20
+    );
+    
+    doc.save(`resumo-investimentos-${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`);
   };
 
   // Carregar dados ao iniciar o componente

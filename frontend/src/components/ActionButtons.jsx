@@ -24,7 +24,7 @@ const ActionButtons = ({ onActionClick }) => {
       bgColorTo: 'to-red-100',
       textColor: 'text-red-600',
       shadowColor: 'rgba(248, 113, 113, 0.2)',
-      path: '/saque'  // Alterado de '/withdraw' para '/saque'
+      path: '/saque'
     },
     {
       name: 'Transferir',
@@ -33,7 +33,7 @@ const ActionButtons = ({ onActionClick }) => {
       bgColorTo: 'to-blue-100',
       textColor: 'text-blue-600',
       shadowColor: 'rgba(59, 130, 246, 0.2)',
-      path: '/transfer'
+      path: '/transferencia'  // Alterado de '/transfer' para '/transferencia'
     },
     {
       name: 'Investir',

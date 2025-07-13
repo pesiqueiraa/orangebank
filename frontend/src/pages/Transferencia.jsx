@@ -161,30 +161,16 @@ const Transferencia = () => {
       const sourceAccountId = contaInfo[contaOrigem]?.id;
       
       if (!sourceAccountId) {
-        throw new Error('Conta de origem não encontrada');
-      }
-      
-      let toAccountId;
-      
-      if (tipoTransferencia === 'internal') {
-        // Para transferência interna, usar o ID da conta destino interna
-        toAccountId = contaInfo[contaDestinoInterna]?.id;
-        
-        if (!toAccountId) {
-          throw new Error('Conta de destino não encontrada');
-        }
-      } else {
-        // Para transferência externa, usar o ID obtido na validação da conta
-        toAccountId = contaDestinoInfo?.accountId;
-        
-        if (!toAccountId) {
-          throw new Error('Conta de destino não válida');
-        }
+        throw new Error('Conta de origem inválida');
       }
       
       // Chamar a API usando o endpoint do AccountController
       const response = await axios.post(`${API_URL}/accounts/${sourceAccountId}/transfer`, {
-        toAccountId: toAccountId,
+        // Para transferência interna, enviar o ID da conta destino
+        // Para transferência externa, enviar o email do destinatário
+        ...(tipoTransferencia === 'internal' 
+          ? { toAccountId: contaInfo[contaDestinoInterna]?.id } 
+          : { toEmail: contaDestino }),
         amount: valorNumerico,
         isExternal: tipoTransferencia === 'external'
       });
@@ -243,14 +229,28 @@ const Transferencia = () => {
     setContaDestinoValida(null);
     
     try {
-      // Validar a conta de destino pelo número da conta (ID)
-      const response = await axios.get(`${API_URL}/accounts/number/${contaDestino}`);
+      // Using email directly - no cleaning needed like with CPF
+      const email = contaDestino.trim();
       
-      if (response.data.success) {
+      // First, search for user by email
+      const responseUser = await axios.get(`${API_URL}/users/email/${email}`);
+      
+      if (!responseUser.data.success) {
+        setContaDestinoValida(false);
+        setContaDestinoInfo(null);
+        return;
+      }
+      
+      // If user found, get their account
+      const userId = responseUser.data.data.id;
+      const responseAccount = await axios.get(`${API_URL}/accounts/${userId}/corrente`);
+      
+      if (responseAccount.data.success) {
         setContaDestinoValida(true);
         setContaDestinoInfo({
-          ...response.data.data,
-          accountId: response.data.data.id // Garantir que temos o ID da conta
+          accountId: responseAccount.data.data.id,
+          ownerName: responseUser.data.data.name || responseUser.data.data.email,
+          userId: userId
         });
       } else {
         setContaDestinoValida(false);
@@ -410,14 +410,14 @@ const Transferencia = () => {
               
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Número do CPF do destinatário
+                  Email do destinatário
                 </label>
                 <div className="flex">
                   <input
-                    type="text"
+                    type="email"
                     value={contaDestino}
                     onChange={(e) => setContaDestino(e.target.value)}
-                    placeholder="Ex: 123.456.789-00"
+                    placeholder="Ex: usuario@exemplo.com"
                     className="flex-grow p-2 border border-gray-300 rounded-l-md focus:ring-blue-500 focus:border-blue-500"
                   />
                   <button

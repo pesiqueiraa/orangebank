@@ -331,32 +331,42 @@ class AccountController {
   // ==================== OPERAÇÕES DE INVESTIMENTO ====================
 
   /**
-   * Comprar ativos
+   * Comprar ações
    * POST /api/accounts/:accountId/buy-asset
    */
   static async buyAsset(req, res) {
     try {
       const { accountId } = req.params;
-      const { assetSymbol, quantity, price } = req.body;
+      const { assetId, quantity, price } = req.body;
+      
+      // Log para depuração
+      console.log('Parâmetros recebidos:', { accountId, assetId, quantity, price });
 
       if (!accountId) {
         return res.status(400).json({
           success: false,
-          message: "ID da conta é obrigatório",
+          message: "ID da conta é obrigatório"
         });
       }
 
-      if (!assetSymbol || !quantity || !price) {
+      if (!assetId) {
         return res.status(400).json({
           success: false,
-          message: "Símbolo do ativo, quantidade e preço são obrigatórios",
+          message: "ID do ativo é obrigatório"
+        });
+      }
+      
+      if (!quantity || isNaN(Number(quantity)) || Number(quantity) <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Quantidade deve ser um número maior que zero"
         });
       }
 
-      if (quantity <= 0 || price <= 0) {
+      if (!price || isNaN(Number(price)) || Number(price) <= 0) {
         return res.status(400).json({
           success: false,
-          message: "Quantidade e preço devem ser maiores que zero",
+          message: "Preço deve ser um número maior que zero"
         });
       }
 
@@ -364,33 +374,35 @@ class AccountController {
       if (!account) {
         return res.status(404).json({
           success: false,
-          message: "Conta não encontrada",
+          message: "Conta não encontrada"
         });
       }
 
-      const result = await account.buyAsset(
-        assetSymbol,
-        parseFloat(quantity),
-        parseFloat(price)
+      // Converter para número
+      const result = await account.buyStockAsset(
+        assetId,
+        Number(quantity),
+        Number(price)
       );
 
       return res.status(200).json(result);
     } catch (error) {
+      console.error('Erro ao comprar ativo:', error);
       return res.status(400).json({
         success: false,
-        message: error.message,
+        message: error.message
       });
     }
   }
 
   /**
-   * Vender ativos
-   * POST /api/accounts/:accountId/sell-asset
+   * Comprar ativo de renda fixa
+   * POST /api/accounts/:accountId/buy-fixed-income
    */
-  static async sellAsset(req, res) {
+  static async buyFixedIncome(req, res) {
     try {
       const { accountId } = req.params;
-      const { assetSymbol, quantity, currentPrice } = req.body;
+      const { fixedIncomeId, amount } = req.body;
 
       if (!accountId) {
         return res.status(400).json({
@@ -399,18 +411,17 @@ class AccountController {
         });
       }
 
-      if (!assetSymbol || !quantity || !currentPrice) {
+      if (!fixedIncomeId || !amount) {
         return res.status(400).json({
           success: false,
-          message:
-            "Símbolo do ativo, quantidade e preço atual são obrigatórios",
+          message: "ID do ativo de renda fixa e valor são obrigatórios",
         });
       }
 
-      if (quantity <= 0 || currentPrice <= 0) {
+      if (amount <= 0) {
         return res.status(400).json({
           success: false,
-          message: "Quantidade e preço devem ser maiores que zero",
+          message: "Valor deve ser maior que zero",
         });
       }
 
@@ -422,10 +433,9 @@ class AccountController {
         });
       }
 
-      const result = await account.sellAsset(
-        assetSymbol,
-        parseFloat(quantity),
-        parseFloat(currentPrice)
+      const result = await account.buyFixedIncome(
+        fixedIncomeId,
+        parseFloat(amount)
       );
 
       return res.status(200).json(result);
@@ -775,80 +785,25 @@ class AccountController {
       });
     }
   }
-  /**   * Buscar todos os ativos disponíveis
-   * GET /api/accounts/available-assets
+  /**
+   * Obter todos os ativos disponíveis (ações e renda fixa)
+   * GET /api/accounts/assets
    */
   static async getAvailableAssets(req, res) {
     try {
-      const { type } = req.query; // 'ação' ou 'renda fixa'
-
-      let query;
-      let params = [];
-
-      if (type === "ação") {
-        query = `
-          SELECT 
-            a.id,
-            a.nome,
-            a.tipo,
-            a.categoria,
-            s.symbol,
-            s.current_price,
-            s.daily_variation
-          FROM assets a
-          JOIN stocks s ON s.asset_id = a.id
-          WHERE a.tipo = 'ação'
-          ORDER BY a.categoria, a.nome
-        `;
-      } else if (type === "renda fixa") {
-        query = `
-          SELECT 
-            a.id,
-            a.nome,
-            a.tipo,
-            a.categoria,
-            fi.id as symbol,
-            fi.name,
-            fi.rate,
-            fi.rate_type,
-            fi.maturity,
-            fi.minimum_investment
-          FROM assets a
-          JOIN fixed_income fi ON fi.asset_id = a.id
-          WHERE a.tipo = 'renda fixa'
-          ORDER BY fi.maturity, a.nome
-        `;
-      } else {
-        query = `
-          SELECT 
-            a.id,
-            a.nome,
-            a.tipo,
-            a.categoria,
-            COALESCE(s.symbol, fi.id) as symbol,
-            s.current_price,
-            s.daily_variation,
-            fi.rate,
-            fi.rate_type,
-            fi.maturity,
-            fi.minimum_investment
-          FROM assets a
-          LEFT JOIN stocks s ON s.asset_id = a.id
-          LEFT JOIN fixed_income fi ON fi.asset_id = a.id
-          ORDER BY a.tipo, a.categoria, a.nome
-        `;
-      }
-
-      const result = await db.query(query, params);
-
-      res.json({
+      const allAssets = await Account.getAvailableAssets();
+      
+      return res.status(200).json({
         success: true,
-        data: result.rows,
+        message: "Ativos disponíveis recuperados com sucesso",
+        data: allAssets
       });
     } catch (error) {
-      res.status(500).json({
+      console.error("Erro ao buscar ativos disponíveis:", error);
+      return res.status(500).json({
         success: false,
-        message: error.message,
+        message: "Erro ao buscar ativos disponíveis",
+        error: error.message
       });
     }
   }

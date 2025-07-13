@@ -10,11 +10,13 @@ import {
   Info,
   FileText
 } from 'lucide-react';
+import orangeCoin from '../../../assets/orangecoin.png';
 import axios from 'axios';
 import ResumoContas from '../components/ResumoContas';
 import ActionButtons from '../components/ActionButtons';
 import HistoricoTransacoes from '../components/HistoricoTransacoes';
 import Grafico from '../components/Grafico';
+import OrangeCoinWidget from '../components/OrangeCoinWidget';
 
 const API_URL = 'http://localhost:3000/api';
 
@@ -29,6 +31,8 @@ const Dashboard = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('success');
   const [chartPeriod, setChartPeriod] = useState('week');
+  const [orangeCoins, setOrangeCoins] = useState(0);
+  const [previousOrangeCoins, setPreviousOrangeCoins] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -50,6 +54,15 @@ const Dashboard = () => {
       // Obter dados do usuário do localStorage
       const storedUser = JSON.parse(localStorage.getItem('user'));
       setUser(storedUser);
+      
+      // Salvar valor anterior antes de atualizar
+      setPreviousOrangeCoins(orangeCoins);
+      
+      // Obter OrangeCoins do usuário
+      const orangeCoinsResponse = await axios.get(`${API_URL}/users/${storedUser.id}/orangecoins`);
+      if (orangeCoinsResponse.data.success) {
+        setOrangeCoins(orangeCoinsResponse.data.data.orangeCoins);
+      }
       
       // Obter contas do usuário
       const accountsResponse = await axios.get(`${API_URL}/accounts/${storedUser.id}`);
@@ -165,13 +178,21 @@ const Dashboard = () => {
     try {
       setIsLoading(true);
       
+      // Salvar valor anterior antes de chamar a API
+      setPreviousOrangeCoins(orangeCoins);
+      
       const response = await axios.post(`${API_URL}/accounts/${accountId}/deposit`, {
         amount: parseFloat(amount)
       });
       
       if (response.data.success) {
         displayToast('Depósito realizado com sucesso!', 'success');
-        fetchDashboardData(); // Recarregar dados
+        fetchDashboardData(); // Recarregar dados que atualizará OrangeCoins
+        
+        // Opcionalmente, mostre um toast específico para OrangeCoins
+        setTimeout(() => {
+          displayToast('Você ganhou +5 OrangeCoins!', 'reward');
+        }, 1000);
       }
     } catch (error) {
       console.error("Erro ao realizar depósito:", error);
@@ -322,6 +343,8 @@ const Dashboard = () => {
           
           
           <div className="flex items-center space-x-4">
+            <OrangeCoinWidget coins={orangeCoins} previousCoins={previousOrangeCoins} />
+            
             <motion.div 
               className="flex items-center space-x-2"
               whileHover={{ scale: 1.05 }}
@@ -473,6 +496,8 @@ const Toast = ({ message, type = 'success' }) => {
         return <CheckCircle className="h-5 w-5 text-white" />;
       case 'error':
         return <AlertCircle className="h-5 w-5 text-white" />;
+      case 'reward':
+        return <img src="/assets/orangecoin.png" alt="OrangeCoin" className="h-5 w-5" />;
       case 'info':
       default:
         return <Info className="h-5 w-5 text-white" />;
@@ -486,6 +511,8 @@ const Toast = ({ message, type = 'success' }) => {
         return 'bg-green-500';
       case 'error':
         return 'bg-red-500';
+      case 'reward':
+        return 'bg-gradient-to-r from-orange-500 to-amber-500';
       case 'info':
       default:
         return 'bg-blue-500';

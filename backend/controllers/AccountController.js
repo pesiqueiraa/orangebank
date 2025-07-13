@@ -524,6 +524,47 @@ class AccountController {
     }
   }
 
+  /**
+   * Obter resumo da carteira de investimentos (dados consolidados)
+   * GET /api/accounts/:accountId/portfolio/summary
+   */
+  static async getPortfolioSummary(req, res) {
+    try {
+      const { accountId } = req.params;
+      
+      if (!accountId) {
+        return res.status(400).json({
+          success: false,
+          message: "ID da conta é obrigatório",
+        });
+      }
+
+      const account = await Account.findById(accountId);
+      if (!account) {
+        return res.status(404).json({
+          success: false,
+          message: "Conta não encontrada",
+        });
+      }
+      
+      // Obter resumo através do modelo
+      const summary = await account.getPortfolioSummary();
+
+      return res.status(200).json({
+        success: true,
+        message: "Resumo do portfólio obtido com sucesso",
+        data: summary
+      });
+    } catch (error) {
+      console.error("Erro ao obter resumo do portfólio:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Erro ao obter resumo do portfólio",
+        error: error.message
+      });
+    }
+  }
+
   // ==================== HISTÓRICO E RELATÓRIOS ====================
 
   /**

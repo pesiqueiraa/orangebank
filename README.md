@@ -141,9 +141,18 @@ Implementamos alertas inteligentes que notificam o usuário sobre:
 * Confirmação de operações realizadas
 
 ### OrangeCoins
-&ensp; No OrangeBank, investir ficou ainda mais divertido com as **OrangeCoins**! 🪙🍊
+&ensp; No OrangeBank, investir ficou ainda mais divertido com as **OrangeCoins**! 🍊
 
-Toda vez que você realiza ações na plataforma — como depósitos, saques, transferências, investimentos ou até mesmo gerar relatórios — você ganha OrangeCoins automaticamente. Elas aparecem no seu painel com direito a animação e ranking de níveis, deixando sua experiência mais gamificada e motivadora!
+&ensp; Toda vez que você realiza ações na plataforma, como depósitos, saques, transferências, investimentos ou até mesmo gerar relatórios, você ganha OrangeCoins automaticamente. Elas aparecem no seu painel com direito a animação e ranking de níveis, deixando sua experiência mais gamificada e motivadora!
+
+#### Como ganhar OrangeCoins?
+- Fazer depósitos, saques e transferências
+- Investir em ações ou renda fixa
+- Gerar relatórios financeiros
+- Completar seu perfil e engajar com a plataforma
+
+#### Para que servem?
+Por enquanto, as OrangeCoins são um símbolo do seu engajamento e evolução dentro do OrangeBank. Quanto mais você usa, mais moedas ganha e mais alto sobe de nível! Quem sabe no futuro elas não valem prêmios de verdade? 
 
 
 

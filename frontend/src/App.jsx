@@ -20,12 +20,10 @@ const InvestPage = () => <div className="p-10"><h1 className="text-2xl">Página 
 
 // Componente para proteção de rotas
 const ProtectedRoute = ({ children }) => {
-  // Verificar se o usuário está autenticado
-  // Em um app real, isto verificaria um token JWT ou similar
-  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+  // Verificar se o usuário está autenticado usando 'user' ao invés de 'isAuthenticated'
+  const isAuthenticated = localStorage.getItem('user') !== null;
   
   if (!isAuthenticated) {
-    // Redirecionar para o login se não estiver autenticado
     return <Navigate to="/login" replace />;
   }
   

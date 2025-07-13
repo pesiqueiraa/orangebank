@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+// Definir a URL base da API - mantendo consistência com outros componentes
+const API_URL = 'http://localhost:3000/api'; // Ajuste conforme seu ambiente
 
 // Componentes para animação de entrada na página
 const pageVariants = {
@@ -34,22 +38,34 @@ const Saque = () => {
   useEffect(() => {
     const fetchContaCorrente = async () => {
       try {
-        // Em uma implementação real, você buscaria o ID do usuário da sessão
-        const userId = localStorage.getItem('userId') || 'mock-user-id';
+        setIsLoading(true);
         
-        const response = await fetch(`/api/accounts/${userId}/corrente`);
-        if (!response.ok) throw new Error('Erro ao buscar dados da conta');
+        // Obter dados do usuário do localStorage
+        const storedUser = JSON.parse(localStorage.getItem('user'));
         
-        const data = await response.json();
-        setContaCorrente(data);
+        if (!storedUser || !storedUser.id) {
+          navigate('/login');
+          return;
+        }
+
+        // Buscar a conta corrente do usuário usando axios
+        const response = await axios.get(`${API_URL}/accounts/${storedUser.id}/corrente`);
+        
+        if (response.data.success) {
+          setContaCorrente(response.data.data);
+        } else {
+          throw new Error("Erro ao buscar dados da conta");
+        }
       } catch (error) {
         console.error('Erro ao carregar conta corrente:', error);
-        displayToast('Erro ao carregar dados da conta', 'error');
+        displayToast(error.response?.data?.message || 'Erro ao carregar dados da conta', 'error');
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchContaCorrente();
-  }, []);
+  }, [navigate]);
 
   // Função para exibir notificações toast
   const displayToast = (message, type = 'success') => {
@@ -99,42 +115,39 @@ const Saque = () => {
     setIsLoading(true);
     
     try {
-      // Em uma implementação real, você usaria o ID real da conta corrente
-      const accountId = contaCorrente?.id || 'mock-account-id';
-      
-      const response = await fetch(`/api/accounts/${accountId}/withdraw`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ amount: valorNumerico })
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Erro ao realizar saque');
+      if (!contaCorrente || !contaCorrente.id) {
+        throw new Error("Conta corrente não encontrada");
       }
       
-      // Atualizar o saldo da conta
-      if (contaCorrente) {
+      // Chamar a API de saque usando axios
+      const response = await axios.post(
+        `${API_URL}/accounts/${contaCorrente.id}/withdraw`, 
+        { amount: valorNumerico }
+      );
+      
+      if (response.data.success) {
+        // Atualizar o saldo da conta
         setContaCorrente({
           ...contaCorrente,
-          balance: data.newBalance
+          balance: response.data.newBalance
         });
+        
+        displayToast('Saque realizado com sucesso!', 'success');
+        setValor(''); // Limpa o campo após o saque
+        
+        // Redirecionar para o dashboard após 2 segundos
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 2000);
+      } else {
+        throw new Error(response.data.message || 'Falha ao realizar o saque');
       }
-      
-      displayToast('Saque realizado com sucesso!', 'success');
-      setValor(''); // Limpa o campo após o saque
-      
-      // Redirecionar para o dashboard após 2 segundos
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 2000);
-      
     } catch (error) {
       console.error('Erro ao realizar saque:', error);
-      displayToast(error.message || 'Falha ao realizar o saque', 'error');
+      displayToast(
+        error.response?.data?.message || error.message || 'Falha ao realizar o saque', 
+        'error'
+      );
     } finally {
       setIsLoading(false);
     }

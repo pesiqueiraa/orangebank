@@ -848,6 +848,68 @@ class AccountController {
       });
     }
   }
+
+  /**
+   * Vender ações
+   * POST /api/accounts/:accountId/sell-asset
+   */
+  static async sellAsset(req, res) {
+    try {
+      const { accountId } = req.params;
+      const { assetSymbol, quantity, currentPrice } = req.body;
+      
+      if (!accountId) {
+        return res.status(400).json({
+          success: false,
+          message: "ID da conta é obrigatório"
+        });
+      }
+
+      if (!assetSymbol) {
+        return res.status(400).json({
+          success: false,
+          message: "Símbolo do ativo é obrigatório"
+        });
+      }
+      
+      if (!quantity || isNaN(Number(quantity)) || Number(quantity) <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Quantidade deve ser um número maior que zero"
+        });
+      }
+
+      if (!currentPrice || isNaN(Number(currentPrice)) || Number(currentPrice) <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Preço deve ser um número maior que zero"
+        });
+      }
+
+      const account = await Account.findById(accountId);
+      if (!account) {
+        return res.status(404).json({
+          success: false,
+          message: "Conta não encontrada"
+        });
+      }
+
+      // Converter para número
+      const result = await account.sellAsset(
+        assetSymbol,
+        Number(quantity),
+        Number(currentPrice)
+      );
+
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error('Erro ao vender ativo:', error);
+      return res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
 }
 
 module.exports = AccountController;

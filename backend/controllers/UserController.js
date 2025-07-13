@@ -213,6 +213,49 @@ class UserController {
       res.status(500).json({ error: error.message });
     }
   }
+
+  /**
+   * Buscar usuário pelo Email
+   * GET /api/users/email/:email
+   */
+  static async getUserByEmail(req, res) {
+    try {
+      const { email } = req.params;
+
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message: "Email é obrigatório",
+        });
+      }
+
+      const user = await User.findByEmail(email);
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "Usuário não encontrado",
+        });
+      }
+
+      // Return only necessary data
+      return res.status(200).json({
+        success: true,
+        message: "Usuário encontrado",
+        data: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+        },
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Erro interno do servidor",
+        error: error.message,
+      });
+    }
+  }
 }
 
 module.exports = UserController;

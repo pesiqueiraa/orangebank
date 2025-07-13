@@ -246,12 +246,19 @@ class AccountController {
   static async transfer(req, res) {
     try {
       const { accountId } = req.params;
-      const { toAccountId, amount, isExternal = false } = req.body;
+      const { toAccountId, toEmail, amount, isExternal = false } = req.body;
 
-      if (!accountId || !toAccountId) {
+      if (!accountId) {
         return res.status(400).json({
           success: false,
-          message: "IDs das contas são obrigatórios",
+          message: "ID da conta de origem é obrigatório",
+        });
+      }
+
+      if (!toAccountId && !toEmail) {
+        return res.status(400).json({
+          success: false,
+          message: "ID da conta de destino ou email do destinatário é obrigatório",
         });
       }
 
@@ -270,15 +277,40 @@ class AccountController {
         });
       }
 
-      const toAccount = await Account.findById(toAccountId);
-      if (!toAccount) {
-        return res.status(404).json({
-          success: false,
-          message: "Conta de destino não encontrada",
-        });
+      let toAccount;
+      
+      // Handle transfer by email
+      if (toEmail) {
+        const User = require('../models/User');
+        const destinationUser = await User.findByEmail(toEmail);
+        if (!destinationUser) {
+          return res.status(404).json({
+            success: false,
+            message: "Usuário de destino não encontrado",
+          });
+        }
+
+        // Get the user's "corrente" account
+        toAccount = await Account.findByUserIdAndType(destinationUser.id, 'corrente');
+        if (!toAccount) {
+          return res.status(404).json({
+            success: false,
+            message: "Conta de destino não encontrada",
+          });
+        }
+      } 
+      // Handle transfer by account ID
+      else {
+        toAccount = await Account.findById(toAccountId);
+        if (!toAccount) {
+          return res.status(404).json({
+            success: false,
+            message: "Conta de destino não encontrada",
+          });
+        }
       }
 
-      // Determinar se é transferência externa
+      // Determine if this is an external transfer
       const external = fromAccount.userId !== toAccount.userId;
 
       const result = await fromAccount.transfer(

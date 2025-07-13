@@ -7,7 +7,8 @@ import {
   LogOut, 
   CheckCircle, 
   AlertCircle, 
-  Info
+  Info,
+  FileText
 } from 'lucide-react';
 import axios from 'axios';
 import ResumoContas from '../components/ResumoContas';
@@ -319,6 +320,7 @@ const Dashboard = () => {
             <h1 className="text-xl font-semibold text-gray-800">OrangeBank</h1>
           </div>
           
+          
           <div className="flex items-center space-x-4">
             <motion.div 
               className="flex items-center space-x-2"
@@ -390,6 +392,34 @@ const Dashboard = () => {
             </div>
           </div>
           <Grafico period={chartPeriod} performanceData={performance} />
+        </motion.div>
+        
+        {/* Card de Relatórios */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.35 }}
+          className="mt-8"
+        >
+          <div className="bg-orange-50 rounded-xl p-6 border border-orange-100 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Relatórios Financeiros</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Acesse relatórios detalhados sobre suas finanças, investimentos e impostos.
+                </p>
+              </div>
+              <motion.button
+                onClick={() => navigate('/relatorio')}
+                className="px-5 py-2.5 bg-orange-500 text-white rounded-lg flex items-center space-x-2 shadow-md hover:bg-orange-600 transition-colors"
+                whileHover={{ scale: 1.05, boxShadow: "0 10px 15px -3px rgba(251, 146, 60, 0.3)" }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <FileText className="h-5 w-5" />
+                <span className="font-medium">Ver Relatórios</span>
+              </motion.button>
+            </div>
+          </div>
         </motion.div>
         
         {/* Botões de ação */}

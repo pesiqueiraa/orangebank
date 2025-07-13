@@ -5,7 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 
 // Constante para URL da API
-const API_URL = 'http://localhost:3000/api';
+const API_URL = "http://localhost:3000/api";
 
 // Componentes para animação de entrada na página
 const pageVariants = {
@@ -39,18 +39,20 @@ const Deposito = () => {
     const fetchContaCorrente = async () => {
       try {
         setIsLoading(true);
-        
+
         // Obter dados do usuário do localStorage
-        const storedUser = JSON.parse(localStorage.getItem('user'));
-        
+        const storedUser = JSON.parse(localStorage.getItem("user"));
+
         if (!storedUser || !storedUser.id) {
-          navigate('/login');
+          navigate("/login");
           return;
         }
 
         // Buscar a conta corrente do usuário
-        const response = await axios.get(`${API_URL}/accounts/${storedUser.id}/corrente`);
-        
+        const response = await axios.get(
+          `${API_URL}/accounts/${storedUser.id}/corrente`
+        );
+
         if (response.data.success) {
           setContaCorrente(response.data.data);
         } else {
@@ -115,7 +117,7 @@ const Deposito = () => {
 
       // Chamar a API de depósito
       const response = await axios.post(
-        `${API_URL}/accounts/${contaCorrente.id}/deposit`, 
+        `${API_URL}/accounts/${contaCorrente.id}/deposit`,
         { amount: valorNumerico }
       );
 
@@ -123,7 +125,7 @@ const Deposito = () => {
         // Atualizar o saldo da conta
         setContaCorrente({
           ...contaCorrente,
-          balance: response.data.newBalance
+          balance: response.data.newBalance,
         });
 
         displayToast("Depósito realizado com sucesso!", "success");
@@ -139,7 +141,9 @@ const Deposito = () => {
     } catch (error) {
       console.error("Erro ao realizar depósito:", error);
       displayToast(
-        error.response?.data?.message || error.message || "Falha ao realizar o depósito", 
+        error.response?.data?.message ||
+          error.message ||
+          "Falha ao realizar o depósito",
         "error"
       );
     } finally {
@@ -263,7 +267,6 @@ const Deposito = () => {
                 O depósito será creditado imediatamente na sua conta corrente.
               </li>
               <li>Valores depositados já ficam disponíveis para uso.</li>
-              <li>Você receberá um comprovante de depósito no seu e-mail.</li>
             </ul>
           </div>
         </form>

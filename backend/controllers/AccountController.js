@@ -1,4 +1,6 @@
 const Account = require("../models/Account");
+const User = require('../models/User');
+const recompensas = require('../config/recompensas');
 
 class AccountController {
   // ==================== MÉTODOS DE CONSULTA ====================
@@ -188,6 +190,13 @@ class AccountController {
 
       const result = await account.deposit(parseFloat(amount));
 
+      // Adicionar OrangeCoins ao usuário
+      await User.addOrangeCoins(
+        account.userId, 
+        recompensas.DEPOSIT, 
+        'Depósito realizado'
+      );
+
       return res.status(200).json(result);
     } catch (error) {
       return res.status(400).json({
@@ -229,6 +238,13 @@ class AccountController {
       }
 
       const result = await account.withdraw(parseFloat(amount));
+
+      // Adicionar OrangeCoins ao usuário
+      await User.addOrangeCoins(
+        account.userId, 
+        recompensas.WITHDRAW, 
+        'Saque realizado'
+      );
 
       return res.status(200).json(result);
     } catch (error) {
@@ -281,7 +297,6 @@ class AccountController {
       
       // Handle transfer by email
       if (toEmail) {
-        const User = require('../models/User');
         const destinationUser = await User.findByEmail(toEmail);
         if (!destinationUser) {
           return res.status(404).json({
@@ -317,6 +332,13 @@ class AccountController {
         toAccount,
         parseFloat(amount),
         external
+      );
+
+      // Adicionar OrangeCoins ao usuário
+      await User.addOrangeCoins(
+        fromAccount.userId, 
+        isExternal ? recompensas.EXTERNAL_TRANSFER : recompensas.INTERNAL_TRANSFER, 
+        isExternal ? 'Transferência externa realizada' : 'Transferência interna realizada'
       );
 
       return res.status(200).json(result);

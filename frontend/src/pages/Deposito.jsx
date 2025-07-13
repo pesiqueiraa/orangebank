@@ -2,6 +2,10 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, CheckCircle, AlertCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+
+// Constante para URL da API
+const API_URL = 'http://localhost:3000/api';
 
 // Componentes para animação de entrada na página
 const pageVariants = {
@@ -34,21 +38,34 @@ const Deposito = () => {
   useEffect(() => {
     const fetchContaCorrente = async () => {
       try {
-        const userId = localStorage.getItem("userId") || "mock-user-id";
+        setIsLoading(true);
+        
+        // Obter dados do usuário do localStorage
+        const storedUser = JSON.parse(localStorage.getItem('user'));
+        
+        if (!storedUser || !storedUser.id) {
+          navigate('/login');
+          return;
+        }
 
-        const response = await fetch(`/api/accounts/${userId}/corrente`);
-        if (!response.ok) throw new Error("Erro ao buscar dados da conta");
-
-        const data = await response.json();
-        setContaCorrente(data);
+        // Buscar a conta corrente do usuário
+        const response = await axios.get(`${API_URL}/accounts/${storedUser.id}/corrente`);
+        
+        if (response.data.success) {
+          setContaCorrente(response.data.data);
+        } else {
+          throw new Error("Erro ao buscar dados da conta");
+        }
       } catch (error) {
         console.error("Erro ao carregar conta corrente:", error);
         displayToast("Erro ao carregar dados da conta", "error");
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchContaCorrente();
-  }, []);
+  }, [navigate]);
 
   // Função para exibir notificações toast
   const displayToast = (message, type = "success") => {
@@ -92,41 +109,39 @@ const Deposito = () => {
     setIsLoading(true);
 
     try {
-      // Em uma implementação real, você usaria o ID real da conta corrente
-      const accountId = contaCorrente?.id || "mock-account-id";
-
-      const response = await fetch(`/api/accounts/${accountId}/deposit`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ amount: valorNumerico }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Erro ao realizar depósito");
+      if (!contaCorrente || !contaCorrente.id) {
+        throw new Error("Conta corrente não encontrada");
       }
 
-      // Atualizar o saldo da conta
-      if (contaCorrente) {
+      // Chamar a API de depósito
+      const response = await axios.post(
+        `${API_URL}/accounts/${contaCorrente.id}/deposit`, 
+        { amount: valorNumerico }
+      );
+
+      if (response.data.success) {
+        // Atualizar o saldo da conta
         setContaCorrente({
           ...contaCorrente,
-          balance: data.newBalance,
+          balance: response.data.newBalance
         });
+
+        displayToast("Depósito realizado com sucesso!", "success");
+        setValor(""); // Limpa o campo após o depósito
+
+        // Redirecionar para o dashboard após 2 segundos
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 2000);
+      } else {
+        throw new Error(response.data.message || "Erro ao realizar depósito");
       }
-
-      displayToast("Depósito realizado com sucesso!", "success");
-      setValor(""); // Limpa o campo após o depósito
-
-      // Redirecionar para o dashboard após 2 segundos
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 2000);
     } catch (error) {
       console.error("Erro ao realizar depósito:", error);
-      displayToast(error.message || "Falha ao realizar o depósito", "error");
+      displayToast(
+        error.response?.data?.message || error.message || "Falha ao realizar o depósito", 
+        "error"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -187,9 +202,11 @@ const Deposito = () => {
             Saldo disponível em conta corrente
           </p>
           <p className="text-2xl font-bold text-gray-900">
-            {contaCorrente
+            {isLoading
+              ? "Carregando..."
+              : contaCorrente
               ? formatCurrency(contaCorrente.balance)
-              : "Carregando..."}
+              : "Conta não encontrada"}
           </p>
         </motion.div>
 

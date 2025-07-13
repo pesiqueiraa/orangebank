@@ -1,4 +1,6 @@
 const Asset = require("../models/Asset");
+const User = require('../models/User');
+const recompensas = require('../config/recompensas');
 
 class AssetController {
   // ==================== LISTAGEM E BUSCA DE ATIVOS ====================
@@ -750,6 +752,75 @@ class AssetController {
       });
     }
   }
+
+  // Modificar o método de compra de ativo
+  static async buyAsset(req, res) {
+    try {
+      // ... código existente para a compra de ativo ...
+
+      // Após compra bem-sucedida:
+      if (result.success) {
+        // Adicionar OrangeCoins ao usuário
+        await User.addOrangeCoins(
+          account.userId,
+          recompensas.BUY_ASSET,
+          'Compra de ativo'
+        );
+
+        // O restante do código existente...
+      }
+
+      // ... restante do código existente ...
+    } catch (error) {
+      // ... tratamento de erro existente ...
+    }
+  };
+
+  // Modificar o método de compra de renda fixa
+  static async buyFixedIncome(req, res) {
+    try {
+      // ... código existente para a compra de renda fixa ...
+
+      // Após compra bem-sucedida:
+      if (result.success) {
+        // Adicionar OrangeCoins ao usuário
+        await User.addOrangeCoins(
+          account.userId,
+          REWARDS.BUY_FIXED_INCOME,
+          'Compra de renda fixa'
+        );
+
+        // O restante do código existente...
+      }
+
+      // ... restante do código existente ...
+    } catch (error) {
+      // ... tratamento de erro existente ...
+    }
+  };
+
+  // Modificar o método de venda de ativo
+  static async sellAsset(req, res) {
+    try {
+      // ... código existente para a venda de ativo ...
+
+      // Após venda bem-sucedida:
+      if (result.success) {
+        // Adicionar OrangeCoins ao usuário
+        await User.addOrangeCoins(
+          account.userId,
+          REWARDS.SELL_ASSET,
+          'Venda de ativo'
+        );
+
+        // O restante do código existente...
+      }
+
+      // ... restante do código existente ...
+    } catch (error) {
+      // ... tratamento de erro existente ...
+    }
+  };
 }
 
 module.exports = AssetController;

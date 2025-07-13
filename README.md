@@ -1,76 +1,215 @@
-# 🍊 OrangeJuiceBank - Hackathon de Investimentos
+# 🍊 OrangeBank - Seu Banco de Investimentos Digital
 
-Boas vindas ao desafio do Orange Hackathon!  
-Neste final de semana, seu objetivo será desenvolver uma **API de um mini banco de investimentos**, simulando operações comuns do mercado financeiro.
+> "Porque investir não precisa ser azedo como limão! 🍋 Com a OrangeBank, é doce como laranja! 🍊"
 
----
+## 📱 Visão Geral
 
-## 🎯 Objetivo
+Bem-vindo ao OrangeBank! Desenvolvido como parte do Hackathon da Orange Juice, este projeto simula uma plataforma digital completa de banco de investimentos. Uma solução que permite aos usuários gerenciar suas finanças pessoais e investimentos em um único lugar, com uma interface intuitiva e amigável.
 
-Desenvolver uma **API RESTful (preferencialmente em .NET)** que simule as operações de uma plataforma de investimentos digital, além de uma interface **frontend** (web ou mobile) para interação com a API. O objetivo é representar o fluxo real de um banco de investimentos, incluindo movimentações financeiras, aplicações em diferentes tipos de ativos e a visualização dessas operações pelo usuário. O frontend deve permitir que os usuários criem contas, consultem saldos, realizem operações financeiras e acompanhem seus investimentos de forma intuitiva, proporcionando uma experiência próxima à de uma plataforma real de investimentos.
+A plataforma foi construída do zero durante o hackathon, com foco em proporcionar uma experiência próxima à de um banco de investimentos real.
 
----
+## 🚀 Funcionalidades Implementadas
 
-## 🧠 Contexto de Negócio
+### 🏦 Sistema de Contas
 
-A FCamara atende bancos de investimentos e multiplos que possuem expressão a nível Global. Este desafio foi inspirado no domínio de negócio real que atuamos diariamente com nossos clientes, tornando esta uma oportunidade de exercitar habilidades técnicas em um cenário próximo da realidade.
+* ✅ Conta Corrente para operações do dia a dia
+* ✅ Conta Investimento exclusiva para operações no mercado
+* ✅ Dashboard completo com visão consolidada dos saldos
 
----
+### 💸 Operações Financeiras
 
-## 📌 Funcionalidades Obrigatórias
+* ✅ Depósitos e saques na Conta Corrente
+* ✅ Transferências entre contas do mesmo usuário
+* ✅ Transferências para outros usuários (com taxa de 0,5%)
+* ✅ Histórico completo de transações
 
-Sua API deve conter funcionalidades que permitam:
+### 📈 Investimentos
 
-- Criar contas de usuários
-- Consultar saldo
-- Realizar **depósitos**, **saques** e **transferências** entre contas
-- Investir em ativos:
-  - Renda variável (ações fictícias)
-  - Fundos de investimento
-  - Renda fixa:
-    - CDB
-    - Tesouro Direto
-- Realizar **compra e venda de ativos**
-- Cálculo automático de taxas e tributos por operação
+* ✅ Compra e venda de ações
+* ✅ Investimentos em renda fixa (CDB e Tesouro Direto)
+* ✅ Cálculo automático de taxas e tributos
+* ✅ Simulador de rendimentos para renda fixa
 
----
+### 📊 Relatórios
 
-## 💸 Regras de Negócio
+* ✅ Resumo de Investimentos com gráficos e tabelas
+* ✅ Extrato detalhado de conta
+* ✅ Exportação de relatórios em PDF
 
-## 💼 Regras de Negócio
+## 🛠️ Tecnologias Utilizadas
 
-As regras de negócio detalhadas para este desafio estão disponíveis no arquivo [`regradenegocio`](./regradenegocio) localizado neste mesmo diretório.  
-Consulte esse arquivo para entender todos os requisitos e restrições que sua solução deve atender.
+### Backend
 
----
+* Node.js - Ambiente de execução
+* Express - Framework web
+* PostgreSQL - Banco de dados relacional
+* JWT - Autenticação e segurança
 
-## 🧠 Avaliação
+### Frontend
 
-Vamos considerar:
+* React - Framework de frontend
+* TailwindCSS - Framework CSS
+* Lucide React - Ícones modernos
+* Chart.js - Visualização de dados
+* jsPDF - Geração de relatórios PDF
+## 📁 Estrutura do Projeto
 
-- Evidências das regras funcionais do projeto (imagens, vídeos e etc)
-- Qualidade do código e arquitetura
-- Clareza na modelagem do domínio
-- Cobertura de regras de negócio
-- Cobertura em testes de unidade 
-- Criatividade nas soluções e organização do projeto
-- Uso de boas práticas (DDD, SOLID, testes, etc)
+```
+/
+├── assets-mock.json      # Dados simulados para ativos financeiros
+├── users-mock.json       # Dados simulados para usuários
+├── schema.sql            # Script de criação do banco de dados
+├── backend/              # API e lógica de negócios
+│   ├── controllers/      # Controladores da aplicação
+│   ├── models/           # Modelos de dados
+│   ├── routes/           # Rotas da API
+│   └── config/           # Configurações
+└── frontend/             # Interface do usuário
+    ├── public/           # Arquivos estáticos
+    └── src/              # Código fonte React
+        ├── components/   # Componentes reutilizáveis
+        ├── pages/        # Páginas da aplicação
+        └── services/     # Serviços e chamadas de API
+```
 
----
+## 🏃‍♂️ Como Executar o Projeto
 
-## 📦 Entrega
+### Pré-requisitos
 
-Você precisará encaminhar seu projeto nesse formulário, e ele deve conter o link do repositório.
-Leve em consideração:
-- Fazer fork ou clone este repositório
-- Fazer commits durante o desenvolvimento
-- Entregar dentro do prazo
+* Node.js (v14+)
+* PostgreSQL (v12+)
+* NPM
 
-Caso entregue fora do prazo, você será desclassificado!
+### Configurando o Backend
 
----
+```bash
+# Clone o repositório
+git clone https://github.com/pesiqueiraa/orangebank.git
 
-## 🗓️ Prazo
+# Entre na pasta do backend
+cd orangebank/backend
 
-O desafio inicia no dia **10/07, após a live** e precisa ser entregue até o dia **13/07, às 23:59**.  
-Boa sorte e bom código! 🚀 
+# Instale as dependências
+npm install
+
+# Configure o banco de dados
+# 1. Crie um banco de dados PostgreSQL
+# 2. Configure o arquivo .env com suas credenciais (use .env.example como base)
+# 3. Execute o script schema.sql para criar as tabelas
+
+# Inicie o servidor
+npm start
+```
+
+### Configurando o Frontend
+
+```bash
+# Entre na pasta do frontend
+cd ../frontend
+
+# Instale as dependências
+npm install
+
+# Inicie o aplicativo
+npm run dev
+```
+
+
+## 🌟 Funcionalidades em Destaque
+
+### Simulador de Rendimentos
+
+Nosso simulador de renda fixa permite que os usuários visualizem projeções de rendimentos para diferentes cenários de investimento. Basta informar o valor inicial, prazo e tipo de investimento para ver quanto seu dinheiro pode render! 💰
+
+### Simulador de Mercado
+
+O simulador de mercado atualiza automaticamente o valor das ações a cada 5 minutos, com variações aleatórias que seguem uma distribuição de probabilidade realista:
+
+* 40% dos casos: variação entre 0,10% e 2%
+* 30% dos casos: variação entre 2% e 3%
+* 20% dos casos: variação entre 3% e 4%
+* 10% dos casos: variação entre 4% e 5%
+
+Isso cria um ambiente dinâmico onde você pode acompanhar suas ações e tomar decisões de compra e venda como no mercado real! 📊
+
+### Sistema de Notificações
+
+Implementamos alertas inteligentes que notificam o usuário sobre:
+
+* Vencimento próximo de investimentos em renda fixa
+* Variações significativas no preço das ações em sua carteira
+* Confirmação de operações realizadas
+
+### OrangeCoins
+&ensp; No OrangeBank, investir ficou ainda mais divertido com as **OrangeCoins**! 🪙🍊
+
+Toda vez que você realiza ações na plataforma — como depósitos, saques, transferências, investimentos ou até mesmo gerar relatórios — você ganha OrangeCoins automaticamente. Elas aparecem no seu painel com direito a animação e ranking de níveis, deixando sua experiência mais gamificada e motivadora!
+
+
+
+## 🖼️ Screenshots
+
+## Tela de Login 
+
+&ensp; Tela de login com autenticação via email e senha, podendo ser acessado com CPF e senha.
+
+<div align="center">
+ <sub>Figura 1 - Home/1</sub><br>
+ <img src="./assets/login.png" alt="Descrição da imagem"><br>
+ <sup>Fonte: Material produzido pelo autor (2025)</sub><br>
+</div>
+
+## Dashboard Principal
+
+&ensp; Dashboard principal com visão geral das contas e movimentações recentes
+<div align="center">
+ <sub>Figura 1 - Home/1</sub><br>
+ <img src="./assets/home1.png" alt="Descrição da imagem"><br>
+ <sup>Fonte: Material produzido pelo autor (2025)</sub><br>
+</div>
+<div align="center">
+ <sub>Figura 2 - Home/2</sub><br>
+ <img src="./assets/home2.png" alt="Descrição da imagem"><br>
+ <sup>Fonte: Material produzido pelo autor (2025)</sub><br>
+</div>
+
+## Investimentos
+&ensp; Tela de compra de ativos 
+<div align="center">
+ <sub>Figura 3 - Investimento</sub><br>
+ <img src="./assets/invest.png" alt="Descrição da imagem"><br>
+ <sup>Fonte: Material produzido pelo autor (2025)</sub><br>
+</div>
+
+## Relatórios
+&ensp; Painel de relatórios com gráficos e possibilidade de exportar por pdf
+<div align="center">
+ <sub>Figura 4 - Relatórios</sub><br>
+ <img src="./assets/invest.png" alt="Descrição da imagem"><br>
+ <sup>Fonte: Material produzido pelo autor (2025)</sub><br>
+</div>
+
+
+## Link da aplicação
+&ensp; Acesse a aplicação em: [OrangeBank](https://orangebank.pesiqueiraa.vercel.app/)
+
+### Perfil de Teste
+&ensp; Utilize o perfil de teste para explorar a plataforma:
+- **Email:** `joao.investidor@email.com`
+- **Senha:** `123456`
+
+&ensp; Ou fique à vontade para criar sua própria conta!
+
+## 🔮 Melhorias Futuras
+
+Já estamos planejando as próximas atualizações para o OrangeBank:
+
+* 📱 Aplicativo mobile para Android e iOS
+* 🔒 Autenticação de dois fatores
+* 🤖 Chatbot para atendimento ao cliente
+* 📱 Integração com PIX e outros meios de pagamento
+* 🧠 Sistema de recomendação de investimentos baseado em IA
+
+## 🏆 Conclusão
+
+O OrangeBank representa nossa visão de como um banco de investimentos digital moderno deveria funcionar: intuitivo, transparente e educativo. Construímos não apenas um sistema funcional, mas uma plataforma que ajuda pessoas a entenderem melhor o mundo dos investimentos.

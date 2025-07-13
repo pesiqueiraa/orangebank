@@ -18,7 +18,7 @@ import HistoricoTransacoes from '../components/HistoricoTransacoes';
 import Grafico from '../components/Grafico';
 import OrangeCoinWidget from '../components/OrangeCoinWidget';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'https://orangebank.onrender.com/api';
 
 const Dashboard = () => {
   // Estados para armazenar os dados do dashboard

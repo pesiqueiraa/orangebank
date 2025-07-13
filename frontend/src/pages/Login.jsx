@@ -3,7 +3,7 @@ import { Citrus } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'https://orangebank.onrender.com/api';
 
 const Login = () => {
   const navigate = useNavigate();

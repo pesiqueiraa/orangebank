@@ -13,7 +13,7 @@ import ToastNotification from '../components/ToastNotification';
 import SearchAssets from '../components/SearchAssets';
 
 // Definir a URL base da API
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'https://orangebank.onrender.com/api';
 
 // Configuração para animação de entrada na página
 const pageVariants = {

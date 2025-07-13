@@ -8,7 +8,7 @@ import RelatorioTabela from './RelatorioTabela';
 import GraficoRelatorio from './GraficoRelatorio';
 import { Link } from 'react-router-dom';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'https://orangebank.onrender.com/api';
 
 const ImpostoRenda = () => {
   const [data, setData] = useState({

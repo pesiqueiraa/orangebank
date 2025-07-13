@@ -18,7 +18,7 @@ import {
 import { jsPDF } from "jspdf";
 import autoTable from 'jspdf-autotable';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'https://orangebank.onrender.com/api';
 
 const ExtratoConta = () => {
   const [statementData, setStatementData] = useState({

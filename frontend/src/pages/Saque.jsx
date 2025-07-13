@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 // Definir a URL base da API - mantendo consistência com outros componentes
-const API_URL = 'http://localhost:3000/api'; // Ajuste conforme seu ambiente
+const API_URL = 'https://orangebank.onrender.com/api'; // Ajuste conforme seu ambiente
 
 // Componentes para animação de entrada na página
 const pageVariants = {

@@ -5,7 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 
 // Constante para URL da API
-const API_URL = "http://localhost:3000/api";
+const API_URL = "https://orangebank.onrender.com/api";
 
 // Componentes para animação de entrada na página
 const pageVariants = {

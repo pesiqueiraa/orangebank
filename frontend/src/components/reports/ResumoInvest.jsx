@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 import { jsPDF } from "jspdf";
 
 // API URL
-const API_URL = "http://localhost:3000/api";
+const API_URL = "https://orangebank.onrender.com/api";
 
 const ResumoInvest = () => {
   const [summaryData, setSummaryData] = useState(null);

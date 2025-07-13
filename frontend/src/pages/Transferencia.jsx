@@ -486,8 +486,6 @@ const Transferencia = () => {
             <ul className="text-sm text-gray-500 list-disc pl-5 space-y-1">
               <li>O valor não pode exceder o saldo da conta de origem.</li>
               <li>A transferência entre suas contas é instantânea.</li>
-              <li>Transferências para outros bancos podem levar até 1 dia útil.</li>
-              <li>Você receberá um comprovante da transferência no seu e-mail.</li>
             </ul>
           </div>
         </form>

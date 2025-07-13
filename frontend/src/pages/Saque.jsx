@@ -246,8 +246,6 @@ const Saque = () => {
             <ul className="text-sm text-gray-500 list-disc pl-5 space-y-1">
               <li>O valor não pode exceder seu saldo atual.</li>
               <li>O saque será debitado imediatamente da sua conta corrente.</li>
-              <li>Você receberá um comprovante de saque no seu e-mail.</li>
-              <li>Para valores acima de R$5.000,00, entre em contato com nossa central.</li>
             </ul>
           </div>
         </form>

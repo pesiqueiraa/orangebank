@@ -17,6 +17,7 @@ router.get('/:accountId/pending-operations', AccountController.checkPendingOpera
 
 // Obter carteira de investimentos
 router.get('/:accountId/portfolio', AccountController.getPortfolio);
+router.get('/:accountId/portfolio/summary', AccountController.getPortfolioSummary);
 
 // Calcular performance dos investimentos
 router.get('/:accountId/performance', AccountController.getInvestmentPerformance);

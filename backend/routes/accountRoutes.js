@@ -60,7 +60,7 @@ router.post('/:accountId/statement', AccountController.generateStatement);
 // Comprar ativos
 router.post('/:accountId/buy-asset', AccountController.buyAsset);
 
-// Vender ativos
-router.post('/:accountId/sell-asset', AccountController.sellAsset);
+// Rota para compra de ativos de renda fixa
+router.post('/:accountId/buy-fixed-income', AccountController.buyFixedIncome);
 
 module.exports = router;

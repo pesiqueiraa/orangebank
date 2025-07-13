@@ -11,12 +11,13 @@ import Dashboard from './pages/Dashboard';
 import Deposito from './pages/Deposito';
 import Saque from './pages/Saque';
 import Transferencia from './pages/Transferencia';
+import InvestPage from './pages/InvestPage';
 
 // Páginas de placeholder para as funcionalidades financeiras
 // Estas páginas seriam implementadas posteriormente
 const WithdrawPage = () => <div className="p-10"><h1 className="text-2xl">Página de Saque</h1><p>Em desenvolvimento...</p></div>;
 const TransferPage = () => <div className="p-10"><h1 className="text-2xl">Página de Transferência</h1><p>Em desenvolvimento...</p></div>;
-const InvestPage = () => <div className="p-10"><h1 className="text-2xl">Página de Investimentos</h1><p>Em desenvolvimento...</p></div>;
+const InvestPagePlaceholder = () => <div className="p-10"><h1 className="text-2xl">Página de Investimentos</h1><p>Em desenvolvimento...</p></div>;
 
 // Componente para proteção de rotas
 const ProtectedRoute = ({ children }) => {

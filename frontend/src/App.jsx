@@ -12,6 +12,7 @@ import Deposito from './pages/Deposito';
 import Saque from './pages/Saque';
 import Transferencia from './pages/Transferencia';
 import InvestPage from './pages/InvestPage';
+import Relatorio from './pages/Relatorio';
 
 // Páginas de placeholder para as funcionalidades financeiras
 // Estas páginas seriam implementadas posteriormente
@@ -106,6 +107,12 @@ const App = () => {
         <Route path="/transferencia" element={
           <ProtectedRoute>
             <Transferencia />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/relatorio" element={
+          <ProtectedRoute>
+            <Relatorio />
           </ProtectedRoute>
         } />
         

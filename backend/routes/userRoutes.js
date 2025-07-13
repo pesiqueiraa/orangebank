@@ -14,4 +14,7 @@ router.post("/login/email", UserController.loginWithEmail);
 // Rota para login com CPF
 router.post("/login/cpf", UserController.loginWithCpf);
 
+// Rota para obter usuário por email
+router.get("/email/:email", UserController.getUserByEmail);
+
 module.exports = router;

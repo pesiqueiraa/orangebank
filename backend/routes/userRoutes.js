@@ -17,4 +17,7 @@ router.post("/login/cpf", UserController.loginWithCpf);
 // Rota para obter usuário por email
 router.get("/email/:email", UserController.getUserByEmail);
 
+// Rota para obter saldo de OrangeCoins
+router.get('/:userId/orangecoins', UserController.getOrangeCoins);
+
 module.exports = router;

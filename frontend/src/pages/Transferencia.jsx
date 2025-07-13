@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+// Definir a URL base da API - mantendo consistência com outros componentes
+const API_URL = 'http://localhost:3000/api'; // Ajuste conforme seu ambiente
 
 // Componentes para animação de entrada na página
 const pageVariants = {
@@ -24,14 +28,14 @@ const Transferencia = () => {
   const [valor, setValor] = useState('');
   const [tipoTransferencia, setTipoTransferencia] = useState('internal');
   const [contaDestino, setContaDestino] = useState('');
-  const [contaOrigem, setContaOrigem] = useState('corrente'); // corrente ou investment
-  const [contaDestinoInterna, setContaDestinoInterna] = useState('investment'); // corrente ou investment
+  const [contaOrigem, setContaOrigem] = useState('corrente'); // corrente ou investimento
+  const [contaDestinoInterna, setContaDestinoInterna] = useState('investimento'); // corrente ou investimento
   const [isLoading, setIsLoading] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [contaDestinoValida, setContaDestinoValida] = useState(null);
   const [contaInfo, setContaInfo] = useState({
     corrente: null,
-    investment: null
+    investimento: null
   });
   const [contaDestinoInfo, setContaDestinoInfo] = useState(null);
   const [showToast, setShowToast] = useState(false);
@@ -44,31 +48,40 @@ const Transferencia = () => {
   useEffect(() => {
     const fetchContas = async () => {
       try {
-        // Em uma implementação real, você buscaria o ID do usuário da sessão
-        const userId = localStorage.getItem('userId') || 'mock-user-id';
+        setIsLoading(true);
+        
+        // Obter dados do usuário do localStorage
+        const storedUser = JSON.parse(localStorage.getItem('user'));
+        
+        if (!storedUser || !storedUser.id) {
+          navigate('/login');
+          return;
+        }
         
         // Buscar conta corrente
-        const responseCorrente = await fetch(`/api/accounts/${userId}/corrente`);
-        if (!responseCorrente.ok) throw new Error('Erro ao buscar dados da conta corrente');
-        const dataCorrente = await responseCorrente.json();
+        const responseCorrente = await axios.get(`${API_URL}/accounts/${storedUser.id}/corrente`);
         
-        // Buscar conta investimento
-        const responseInvestment = await fetch(`/api/accounts/${userId}/investment`);
-        if (!responseInvestment.ok) throw new Error('Erro ao buscar dados da conta investimento');
-        const dataInvestment = await responseInvestment.json();
+        // Buscar conta investimento - corrigindo o endpoint para "investimento"
+        const responseInvestimento = await axios.get(`${API_URL}/accounts/${storedUser.id}/investimento`);
         
-        setContaInfo({
-          corrente: dataCorrente,
-          investment: dataInvestment
-        });
+        if (responseCorrente.data.success && responseInvestimento.data.success) {
+          setContaInfo({
+            corrente: responseCorrente.data.data,
+            investimento: responseInvestimento.data.data
+          });
+        } else {
+          throw new Error("Erro ao buscar dados das contas");
+        }
       } catch (error) {
         console.error('Erro ao carregar dados das contas:', error);
-        displayToast('Erro ao carregar dados das contas', 'error');
+        displayToast(error.response?.data?.message || 'Erro ao carregar dados das contas', 'error');
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchContas();
-  }, []);
+  }, [navigate]);
 
   // Função para exibir notificações toast
   const displayToast = (message, type = 'success') => {
@@ -104,40 +117,17 @@ const Transferencia = () => {
     setContaDestinoInfo(null);
   };
 
-  // Função para verificar se a conta de destino existe (transferência externa)
-  const verificarContaDestino = async () => {
-    if (!contaDestino) return;
-    
-    setIsValidating(true);
-    setContaDestinoValida(null);
-    
-    try {
-      const response = await fetch(`/api/accounts/${contaDestino}/validate`);
-      const data = await response.json();
-      
-      if (response.ok && data.exists) {
-        setContaDestinoValida(true);
-        setContaDestinoInfo(data.accountInfo);
-      } else {
-        setContaDestinoValida(false);
-        setContaDestinoInfo(null);
-      }
-    } catch (error) {
-      console.error('Erro ao validar conta destino:', error);
-      setContaDestinoValida(false);
-      setContaDestinoInfo(null);
-    } finally {
-      setIsValidating(false);
-    }
-  };
-
-  // Função para alternar entre contas (interna)
+  // Adicionar esta função para gerenciar mudanças na conta de origem
   const handleContaOrigemChange = (e) => {
-    const novaConta = e.target.value;
-    setContaOrigem(novaConta);
+    const novaContaOrigem = e.target.value;
+    setContaOrigem(novaContaOrigem);
     
-    // Se a origem for corrente, destino é investment e vice-versa
-    setContaDestinoInterna(novaConta === 'corrente' ? 'investment' : 'corrente');
+    // Atualizar automaticamente a conta destino interna para que não seja igual à origem
+    if (novaContaOrigem === 'corrente') {
+      setContaDestinoInterna('investimento');
+    } else {
+      setContaDestinoInterna('corrente');
+    }
   };
 
   // Função para realizar a transferência
@@ -168,78 +158,110 @@ const Transferencia = () => {
     setIsLoading(true);
     
     try {
-      // Preparar os dados da transferência
-      const transferData = {
-        amount: valorNumerico,
-        sourceAccountId: contaInfo[contaOrigem]?.id
-      };
+      const sourceAccountId = contaInfo[contaOrigem]?.id;
       
-      let endpoint;
-      
-      if (tipoTransferencia === 'internal') {
-        // Transferência entre contas do mesmo usuário
-        endpoint = '/api/transfers/internal';
-        transferData.destinationAccountId = contaInfo[contaDestinoInterna]?.id;
-      } else {
-        // Transferência para outro usuário
-        endpoint = '/api/transfers/external';
-        transferData.destinationAccountId = contaDestinoInfo?.id;
+      if (!sourceAccountId) {
+        throw new Error('Conta de origem não encontrada');
       }
       
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(transferData)
+      let toAccountId;
+      
+      if (tipoTransferencia === 'internal') {
+        // Para transferência interna, usar o ID da conta destino interna
+        toAccountId = contaInfo[contaDestinoInterna]?.id;
+        
+        if (!toAccountId) {
+          throw new Error('Conta de destino não encontrada');
+        }
+      } else {
+        // Para transferência externa, usar o ID obtido na validação da conta
+        toAccountId = contaDestinoInfo?.accountId;
+        
+        if (!toAccountId) {
+          throw new Error('Conta de destino não válida');
+        }
+      }
+      
+      // Chamar a API usando o endpoint do AccountController
+      const response = await axios.post(`${API_URL}/accounts/${sourceAccountId}/transfer`, {
+        toAccountId: toAccountId,
+        amount: valorNumerico,
+        isExternal: tipoTransferencia === 'external'
       });
       
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Erro ao realizar transferência');
-      }
-      
-      // Atualizar os saldos das contas após a transferência
-      if (tipoTransferencia === 'internal') {
-        // Atualiza os saldos das duas contas para transferência interna
-        setContaInfo({
-          ...contaInfo,
-          [contaOrigem]: {
-            ...contaInfo[contaOrigem],
-            balance: contaInfo[contaOrigem].balance - valorNumerico
-          },
-          [contaDestinoInterna]: {
-            ...contaInfo[contaDestinoInterna],
-            balance: contaInfo[contaDestinoInterna].balance + valorNumerico
-          }
-        });
+      if (response.data.success) {
+        // Atualizar os saldos das contas após a transferência
+        if (tipoTransferencia === 'internal') {
+          // Buscar os novos saldos das contas após a transferência
+          const storedUser = JSON.parse(localStorage.getItem('user'));
+          
+          const [responseCorrente, responseInvestimento] = await Promise.all([
+            axios.get(`${API_URL}/accounts/${storedUser.id}/corrente`),
+            axios.get(`${API_URL}/accounts/${storedUser.id}/investimento`)
+          ]);
+          
+          setContaInfo({
+            corrente: responseCorrente.data.data,
+            investimento: responseInvestimento.data.data
+          });
+        } else {
+          // Para transferência externa, atualiza apenas a conta de origem
+          setContaInfo({
+            ...contaInfo,
+            [contaOrigem]: {
+              ...contaInfo[contaOrigem],
+              balance: contaInfo[contaOrigem].balance - valorNumerico - (response.data.fee || 0)
+            }
+          });
+        }
+        
+        displayToast('Transferência realizada com sucesso!', 'success');
+        setValor(''); // Limpa o campo após a transferência
+        setContaDestinoValida(null);
+        setContaDestinoInfo(null);
+        
+        // Redirecionar para o dashboard após 2 segundos
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 2000);
       } else {
-        // Para transferência externa, atualiza apenas a conta de origem
-        setContaInfo({
-          ...contaInfo,
-          [contaOrigem]: {
-            ...contaInfo[contaOrigem],
-            balance: contaInfo[contaOrigem].balance - valorNumerico
-          }
-        });
+        throw new Error(response.data.message || 'Erro ao realizar transferência');
       }
-      
-      displayToast('Transferência realizada com sucesso!', 'success');
-      setValor(''); // Limpa o campo após a transferência
-      setContaDestinoValida(null);
-      setContaDestinoInfo(null);
-      
-      // Redirecionar para o dashboard após 2 segundos
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 2000);
-      
     } catch (error) {
       console.error('Erro ao realizar transferência:', error);
-      displayToast(error.message || 'Falha ao realizar a transferência', 'error');
+      displayToast(error.response?.data?.message || error.message || 'Falha ao realizar a transferência', 'error');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Função para verificar se a conta de destino existe (transferência externa)
+  const verificarContaDestino = async () => {
+    if (!contaDestino) return;
+    
+    setIsValidating(true);
+    setContaDestinoValida(null);
+    
+    try {
+      // Validar a conta de destino pelo número da conta (ID)
+      const response = await axios.get(`${API_URL}/accounts/number/${contaDestino}`);
+      
+      if (response.data.success) {
+        setContaDestinoValida(true);
+        setContaDestinoInfo({
+          ...response.data.data,
+          accountId: response.data.data.id // Garantir que temos o ID da conta
+        });
+      } else {
+        setContaDestinoValida(false);
+        setContaDestinoInfo(null);
+      }
+    } catch (error) {
+      console.error('Erro ao validar conta destino:', error);
+      setContaDestinoValida(false);
+      setContaDestinoInfo(null);
+    } finally {
+      setIsValidating(false);
     }
   };
 
@@ -300,7 +322,7 @@ const Transferencia = () => {
           >
             <p className="text-sm text-gray-500 mb-1">Conta Investimento</p>
             <p className="text-xl font-bold text-gray-900">
-              {contaInfo.investment ? formatCurrency(contaInfo.investment.balance) : 'Carregando...'}
+              {contaInfo.investimento ? formatCurrency(contaInfo.investimento.balance) : 'Carregando...'}
             </p>
           </motion.div>
         </div>
@@ -353,7 +375,7 @@ const Transferencia = () => {
                     className="block w-full mt-1 p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="corrente">Conta Corrente</option>
-                    <option value="investment">Conta Investimento</option>
+                    <option value="investimento">Conta Investimento</option>
                   </select>
                 </div>
                 
@@ -382,7 +404,7 @@ const Transferencia = () => {
                   className="block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="corrente">Conta Corrente</option>
-                  <option value="investment">Conta Investimento</option>
+                  <option value="investimento">Conta Investimento</option>
                 </select>
               </div>
               

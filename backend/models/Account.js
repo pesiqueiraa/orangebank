@@ -939,5 +939,262 @@ class Account {
       updatedAt: this.updatedAt,
     };
   }
+
+  /**
+   * Busca todos os ativos disponíveis para investimento
+   * @returns {Array} Lista de todos os ativos (ações e renda fixa)
+   */
+  static async getAvailableAssets() {
+    try {
+      // Consulta para obter todas as ações com informações completas
+      const queryStocks = `
+        SELECT s.id, s.symbol, a.nome AS name, s.current_price AS price, 
+               s.daily_variation AS variation, a.tipo AS type, a.categoria AS category
+        FROM stocks s
+        JOIN assets a ON s.asset_id = a.id
+        ORDER BY s.symbol
+      `;
+      
+      // Consulta para obter todos os ativos de renda fixa com informações completas
+      const queryFixedIncome = `
+        SELECT f.id, f.id AS symbol, f.name, f.minimum_investment AS price,
+               f.rate AS variation, a.tipo AS type, a.categoria AS category,
+               f.maturity, f.rate, f.rate_type
+        FROM fixed_income f
+        JOIN assets a ON f.asset_id = a.id
+        ORDER BY f.name
+      `;
+      
+      const stocksResult = await db.query(queryStocks);
+      const fixedIncomeResult = await db.query(queryFixedIncome);
+      
+      // Combinar os resultados em uma única lista
+      const allAssets = [
+        ...stocksResult.rows,
+        ...fixedIncomeResult.rows.map(item => ({
+          ...item,
+          isFixedIncome: true,
+          maturityDate: new Date(item.maturity).toLocaleDateString('pt-BR')
+        }))
+      ];
+      
+      return allAssets;
+    } catch (error) {
+      throw new Error(`Erro ao buscar ativos disponíveis: ${error.message}`);
+    }
+  }
+
+  /**
+   * Compra um ativo específico (ação)
+   * @param {string} assetId - ID do ativo a ser comprado
+   * @param {number} quantity - Quantidade a ser comprada
+   * @param {number} price - Preço unitário do ativo
+   * @returns {Object} Resultado da operação de compra
+   */
+  async buyStockAsset(assetId, quantity, price) {
+    try {
+      // Verificar se a conta é do tipo investimento
+      if (this.type !== 'investimento') {
+        throw new Error('Operação permitida apenas para contas de investimento');
+      }
+      
+      // Calcular valor total da compra
+      const totalValue = price * quantity;
+      
+      // Verificar se há saldo suficiente
+      if (this.balance < totalValue) {
+        throw new Error('Saldo insuficiente para esta operação');
+      }
+      
+      // Buscar dados do ativo
+      const assetQuery = `
+        SELECT s.id, s.symbol, a.nome 
+        FROM stocks s 
+        JOIN assets a ON s.asset_id = a.id 
+        WHERE s.id = $1
+      `;
+      const assetResult = await db.query(assetQuery, [assetId]);
+      
+      if (assetResult.rows.length === 0) {
+        throw new Error('Ativo não encontrado');
+      }
+      
+      const asset = assetResult.rows[0];
+      
+      // Iniciar transação
+      await db.query('BEGIN');
+      
+      try {
+        // 1. Registrar a transação financeira
+        const transactionQuery = `
+          INSERT INTO transactions (transaction_id, user_id, account_id, tipo, valor, taxa)
+          VALUES (gen_random_uuid(), $1, $2, 'investimento', $3, 0)
+          RETURNING id
+        `;
+        const transactionResult = await db.query(transactionQuery, [
+          this.userId, this.id, totalValue
+        ]);
+        
+        const transactionId = transactionResult.rows[0].id;
+        
+        // 2. Registrar a operação
+        const operationQuery = `
+          INSERT INTO operations (transaction_ref, asset_id, tipo, quantidade, preco_unitario)
+          VALUES ($1, $2, 'compra', $3, $4)
+          RETURNING id
+        `;
+        const operationResult = await db.query(operationQuery, [
+          transactionId, assetId, quantity, price
+        ]);
+        
+        // 3. Atualizar ou criar posição no portfólio
+        const portfolioQuery = `
+          INSERT INTO portfolio (user_id, account_id, asset_symbol, quantity, average_price, purchase_price, transaction_ref)
+          VALUES ($1, $2, $3, $4, $5, $5, $6)
+          ON CONFLICT (user_id, asset_symbol) 
+          DO UPDATE SET 
+            quantity = portfolio.quantity + $4,
+            average_price = (portfolio.average_price * portfolio.quantity + $5 * $4) / (portfolio.quantity + $4),
+            updated_at = NOW()
+          RETURNING id
+        `;
+        await db.query(portfolioQuery, [
+          this.userId, this.id, asset.symbol, quantity, price, transactionId
+        ]);
+        
+        // 4. Atualizar o saldo da conta
+        const newBalance = this.balance - totalValue;
+        const updateQuery = `
+          UPDATE accounts SET balance = $1, updated_at = NOW() WHERE id = $2
+          RETURNING balance
+        `;
+        const updateResult = await db.query(updateQuery, [newBalance, this.id]);
+        
+        // Commit da transação
+        await db.query('COMMIT');
+        
+        // Atualizar o saldo local do objeto
+        this.balance = parseFloat(updateResult.rows[0].balance);
+        
+        return {
+          success: true,
+          message: 'Ativo comprado com sucesso',
+          operation: operationResult.rows[0],
+          newBalance: this.balance
+        };
+      } catch (error) {
+        // Rollback em caso de erro
+        await db.query('ROLLBACK');
+        throw error;
+      }
+    } catch (error) {
+      throw new Error(`Erro ao comprar ativo: ${error.message}`);
+    }
+  }
+
+  /**
+   * Compra um ativo de renda fixa
+   * @param {string} fixedIncomeId - ID do ativo de renda fixa
+   * @param {number} amount - Valor a ser investido
+   * @returns {Object} Resultado da operação de compra
+   */
+  async buyFixedIncome(fixedIncomeId, amount) {
+    try {
+      // Verificar se a conta é do tipo investimento
+      if (this.type !== 'investimento') {
+        throw new Error('Operação permitida apenas para contas de investimento');
+      }
+      
+      // Verificar se há saldo suficiente
+      if (this.balance < amount) {
+        throw new Error('Saldo insuficiente para esta operação');
+      }
+      
+      // Buscar dados do ativo de renda fixa
+      const assetQuery = `
+        SELECT f.*, a.nome, a.tipo 
+        FROM fixed_income f 
+        JOIN assets a ON f.asset_id = a.id 
+        WHERE f.id = $1
+      `;
+      const assetResult = await db.query(assetQuery, [fixedIncomeId]);
+      
+      if (assetResult.rows.length === 0) {
+        throw new Error('Ativo de renda fixa não encontrado');
+      }
+      
+      const asset = assetResult.rows[0];
+      
+      // Verificar valor mínimo
+      if (amount < asset.minimum_investment) {
+        throw new Error(`O valor mínimo para investimento é ${asset.minimum_investment}`);
+      }
+      
+      // Iniciar transação
+      await db.query('BEGIN');
+      
+      try {
+        // 1. Registrar a transação financeira
+        const transactionQuery = `
+          INSERT INTO transactions (transaction_id, user_id, account_id, tipo, valor, taxa)
+          VALUES (gen_random_uuid(), $1, $2, 'investimento', $3, 0)
+          RETURNING id
+        `;
+        const transactionResult = await db.query(transactionQuery, [
+          this.userId, this.id, amount
+        ]);
+        
+        const transactionId = transactionResult.rows[0].id;
+        
+        // 2. Registrar a operação (considere 1 unidade com preço = amount)
+        const operationQuery = `
+          INSERT INTO operations (transaction_ref, asset_id, tipo, quantidade, preco_unitario)
+          VALUES ($1, $2, 'compra', 1, $3)
+          RETURNING id
+        `;
+        const operationResult = await db.query(operationQuery, [
+          transactionId, asset.asset_id, amount
+        ]);
+        
+        // 3. Atualizar ou criar posição no portfólio para renda fixa
+        const portfolioQuery = `
+          INSERT INTO portfolio (user_id, account_id, asset_symbol, quantity, average_price, purchase_price, transaction_ref)
+          VALUES ($1, $2, $3, 1, $4, $4, $5)
+          RETURNING id
+        `;
+        await db.query(portfolioQuery, [
+          this.userId, this.id, fixedIncomeId, amount, transactionId
+        ]);
+        
+        // 4. Atualizar o saldo da conta
+        const newBalance = this.balance - amount;
+        const updateQuery = `
+          UPDATE accounts SET balance = $1, updated_at = NOW() WHERE id = $2
+          RETURNING balance
+        `;
+        const updateResult = await db.query(updateQuery, [newBalance, this.id]);
+        
+        // Commit da transação
+        await db.query('COMMIT');
+        
+        // Atualizar o saldo local do objeto
+        this.balance = parseFloat(updateResult.rows[0].balance);
+        
+        return {
+          success: true,
+          message: 'Investimento em renda fixa realizado com sucesso',
+          operation: operationResult.rows[0],
+          newBalance: this.balance
+        };
+      } catch (error) {
+        // Rollback em caso de erro
+        await db.query('ROLLBACK');
+        throw error;
+      }
+    } catch (error) {
+      throw new Error(`Erro ao investir em renda fixa: ${error.message}`);
+    }
+  }
 }
+
 module.exports = Account;

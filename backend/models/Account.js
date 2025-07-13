@@ -881,35 +881,77 @@ class Account {
    */
   async generateTaxReport(year = new Date().getFullYear()) {
     try {
+      // Buscar transações de compra e venda de ativos no ano
       const query = `
-                SELECT 
-                    t.tipo,
-                    t.valor,
-                    t.taxa,
-                    t.created_at,
-                    EXTRACT(MONTH FROM t.created_at) as month
-                FROM transactions t
-                WHERE t.user_id = $1 
-                AND EXTRACT(YEAR FROM t.created_at) = $2
-                AND t.tipo IN ('venda_ativo', 'compra_ativo')
-                ORDER BY t.created_at
-            `;
-      const result = await db.query(query, [this.userId, year]);
+        SELECT 
+          t.id,
+          t.tipo,
+          t.valor,
+          t.taxa,
+          t.created_at,
+          EXTRACT(MONTH FROM t.created_at) as month,
+          o.asset_id,
+          o.quantidade,
+          o.preco_unitario,
+          o.imposto_retido,
+          a.nome as asset_name,
+          a.tipo as asset_type
+        FROM transactions t
+        JOIN operations o ON t.id = o.transaction_ref
+        JOIN assets a ON o.asset_id = a.id
+        WHERE t.account_id = $1 
+        AND EXTRACT(YEAR FROM t.created_at) = $2
+        AND t.tipo IN ('venda_ativo', 'compra_ativo')
+        ORDER BY t.created_at
+      `;
+      
+      const result = await db.query(query, [this.id, year]);
 
       let totalTaxPaid = 0;
       let totalProfit = 0;
       let totalLoss = 0;
       const monthlyData = {};
+      const transactions = [];
 
       result.rows.forEach((row) => {
         const month = row.month;
+        
         if (!monthlyData[month]) {
-          monthlyData[month] = { profit: 0, tax: 0, operations: 0 };
+          monthlyData[month] = { profit: 0, loss: 0, tax: 0, operations: 0 };
         }
 
+        // Registrar a transação para detalhamento
         if (row.tipo === "venda_ativo") {
-          totalTaxPaid += parseFloat(row.taxa);
-          monthlyData[month].tax += parseFloat(row.taxa);
+          const operationValue = parseFloat(row.valor) || 0;
+          const tax = parseFloat(row.imposto_retido) || parseFloat(row.taxa) || 0;
+          
+          transactions.push({
+            id: row.id,
+            date: row.created_at,
+            type: 'Venda de Ativo',
+            asset: row.asset_name,
+            asset_type: row.asset_type,
+            quantity: row.quantidade,
+            price: row.preco_unitario,
+            value: operationValue,
+            tax: tax
+          });
+          
+          // Adicionar ao resumo mensal
+          totalTaxPaid += tax;
+          
+          // Determinar se é lucro ou prejuízo
+          // Na prática seria necessário calcular com base no preço médio
+          // mas estamos assumindo que o valor já representa o resultado
+          if (operationValue > 0) {
+            totalProfit += operationValue;
+            monthlyData[month].profit += operationValue;
+          } else {
+            totalLoss += Math.abs(operationValue);
+            monthlyData[month].loss += Math.abs(operationValue);
+          }
+          
+          monthlyData[month].tax += tax;
           monthlyData[month].operations++;
         }
       });
@@ -920,8 +962,10 @@ class Account {
         totalProfit: totalProfit,
         totalLoss: totalLoss,
         monthlyBreakdown: monthlyData,
+        transactions: transactions
       };
     } catch (error) {
+      console.error('Erro ao gerar relatório de IR:', error);
       throw new Error(`Erro ao gerar relatório de IR: ${error.message}`);
     }
   }

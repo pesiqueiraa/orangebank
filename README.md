@@ -200,7 +200,7 @@ Por enquanto, as OrangeCoins são um símbolo do seu engajamento e evolução de
 
 
 ## Link da aplicação
-&ensp; Acesse a aplicação em: [OrangeBank](https://orangebank.pesiqueiraa.vercel.app/)
+&ensp; Acesse a aplicação em: [OrangeBank](https://orangebank.vercel.app/login)
 
 ### Perfil de Teste
 &ensp; Utilize o perfil de teste para explorar a plataforma:

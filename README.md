@@ -69,7 +69,6 @@ A plataforma foi construída do zero durante o hackathon, com foco em proporcion
     └── src/              # Código fonte React
         ├── components/   # Componentes reutilizáveis
         ├── pages/        # Páginas da aplicação
-        └── services/     # Serviços e chamadas de API
 ```
 
 ## 🏃‍♂️ Como Executar o Projeto

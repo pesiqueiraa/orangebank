@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Gift, Trophy, TrendingUp, Info } from 'lucide-react';
 // Importe o png corretamente
-import orangeCoinWhite from '../../../assets/orangecoin-white.png';
-import orangeCoinOrange from '../../../assets/orangecoin-orange.png';
+import orangeCoinWhite from '../assets/orangecoin-white.png';
+import orangeCoinOrange from '../assets/orangecoin-orange.png';
 
 const OrangeCoinWidget = ({ coins, previousCoins = null }) => {
   const [isOpen, setIsOpen] = useState(false);

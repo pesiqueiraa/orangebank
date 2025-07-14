@@ -10,7 +10,6 @@ import {
   Info,
   FileText
 } from 'lucide-react';
-import orangeCoin from '../../../assets/orangecoin.png';
 import axios from 'axios';
 import ResumoContas from '../components/ResumoContas';
 import ActionButtons from '../components/ActionButtons';
